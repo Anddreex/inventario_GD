@@ -1,0 +1,839 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Inventario Central</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-graph-client/3.0.0/graph-js-sdk.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f5f6fa;
+    --surface: #ffffff;
+    --surface2: #f0f1f6;
+    --border: #e2e4ed;
+    --text: #1a1c2e;
+    --muted: #8b8fa8;
+    --accent: #4f6ef7;
+    --cat-papeleria: #4f6ef7;
+    --cat-cafeteria: #f59e0b;
+    --cat-aseo: #10b981;
+    --cat-mobiliario: #a855f7;
+    --ok: #10b981;
+    --warn: #f59e0b;
+    --danger: #ef4444;
+    --empty: #dc2626;
+    --shadow: 0 2px 12px rgba(26,28,46,0.07);
+    --shadow-md: 0 4px 20px rgba(26,28,46,0.10);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+  /* HEADER */
+  header {
+    padding: 1.6rem 2rem 1.3rem;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    display: flex; flex-wrap: wrap; gap: 1rem;
+    align-items: center; justify-content: space-between;
+    box-shadow: var(--shadow);
+  }
+
+  .header-title h1 { font-family: 'Syne', sans-serif; font-size: clamp(1.3rem,3vw,1.9rem); font-weight: 800; color: var(--text); letter-spacing: -0.02em; }
+  .header-title h1 span { color: var(--accent); }
+  .header-title p { color: var(--muted); font-size: 0.78rem; margin-top: 0.2rem; }
+
+  .header-right { display: flex; align-items: center; gap: 0.8rem; flex-wrap: wrap; }
+
+  .sync-status {
+    display: flex; align-items: center; gap: 0.45rem;
+    font-size: 0.74rem; font-weight: 500;
+    padding: 0.35rem 0.85rem;
+    border-radius: 100px;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    color: var(--muted);
+    transition: all 0.3s;
+  }
+
+  .sync-status.connected { background: #ecfdf5; color: #059669; border-color: #a7f3d0; }
+  .sync-status.syncing   { background: #eff6ff; color: var(--accent); border-color: #bfdbfe; }
+  .sync-status.error     { background: #fef2f2; color: var(--danger); border-color: #fecaca; }
+
+  .sync-dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
+  .sync-dot.pulse { animation: pulse 1.4s infinite; }
+
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+  .btn-login {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    padding: 0.48rem 1.1rem;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex; align-items: center; gap: 0.4rem;
+    transition: all 0.15s;
+  }
+
+  .btn-login:hover { background: #3d5ce8; transform: translateY(-1px); }
+  .btn-login:active { transform: scale(0.97); }
+
+  .header-stats { display: flex; gap: 0.6rem; flex-wrap: wrap; }
+
+  .stat-pill {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 100px; padding: 0.35rem 0.85rem;
+    font-size: 0.74rem; font-weight: 500;
+    display: flex; align-items: center; gap: 0.4rem; color: var(--text);
+  }
+
+  .stat-pill .dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+
+  /* CONTROLS */
+  .controls {
+    padding: 0.85rem 2rem;
+    display: flex; gap: 0.6rem; flex-wrap: wrap; align-items: center;
+    border-bottom: 1px solid var(--border);
+    position: sticky; top: 0;
+    background: rgba(245,246,250,0.96);
+    backdrop-filter: blur(12px);
+    z-index: 10;
+  }
+
+  .search-wrap { position: relative; flex: 1; min-width: 180px; max-width: 270px; }
+
+  .search-wrap svg { position: absolute; left: 0.72rem; top: 50%; transform: translateY(-50%); color: var(--muted); pointer-events: none; }
+
+  input[type="search"] {
+    width: 100%; background: var(--surface); border: 1.5px solid var(--border);
+    border-radius: 10px; padding: 0.48rem 0.72rem 0.48rem 2.2rem;
+    color: var(--text); font-family: 'Inter', sans-serif; font-size: 0.82rem;
+    outline: none; transition: border-color 0.18s, box-shadow 0.18s;
+  }
+
+  input[type="search"]::placeholder { color: var(--muted); }
+  input[type="search"]:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(79,110,247,0.1); }
+
+  .filter-group { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+
+  .chip {
+    background: var(--surface); border: 1.5px solid var(--border);
+    border-radius: 100px; padding: 0.35rem 0.85rem;
+    font-size: 0.74rem; font-family: 'Inter', sans-serif; font-weight: 500;
+    color: var(--muted); cursor: pointer; transition: all 0.16s;
+    white-space: nowrap; display: flex; align-items: center; gap: 0.35rem;
+  }
+
+  .chip:hover { border-color: #c0c4da; color: var(--text); }
+  .chip.active { color: #fff; border-color: transparent; }
+  .chip[data-cat="TODOS"].active     { background: var(--accent); }
+  .chip[data-cat="PAPELERIA"].active { background: var(--cat-papeleria); }
+  .chip[data-cat="CAFETERIA"].active { background: var(--cat-cafeteria); }
+  .chip[data-cat="ASEO"].active      { background: var(--cat-aseo); }
+  .chip[data-cat="MOBILIARIO"].active{ background: var(--cat-mobiliario); }
+  .chip[data-status="TODOS"].active  { background: var(--accent); }
+  .chip[data-status="danger"].active { background: var(--danger); }
+  .chip[data-status="warn"].active   { background: var(--warn); }
+  .chip[data-status="empty"].active  { background: var(--empty); }
+
+  .chip-dot { width: 7px; height: 7px; border-radius: 50%; }
+  .divider-v { width: 1px; height: 22px; background: var(--border); flex-shrink: 0; }
+  .status-filters { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+
+  /* SUMMARY */
+  .summary-banner {
+    margin: 1.1rem 2rem 0;
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(100px,1fr)); gap: 0.65rem;
+  }
+
+  .summary-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 0.85rem 1rem; box-shadow: var(--shadow); }
+  .summary-card .s-num { font-family: 'Syne', sans-serif; font-size: 1.75rem; font-weight: 800; line-height: 1; }
+  .summary-card .s-label { font-size: 0.67rem; color: var(--muted); font-weight: 500; text-transform: uppercase; letter-spacing: 0.06em; margin-top: 0.2rem; }
+  .s-total .s-num { color: var(--accent); }
+  .s-ok    .s-num { color: var(--ok); }
+  .s-warn  .s-num { color: var(--warn); }
+  .s-danger .s-num { color: var(--danger); }
+  .s-empty .s-num { color: var(--empty); }
+
+  /* GRID */
+  .grid-container { padding: 1.1rem 2rem 3rem; }
+
+  .section-label {
+    font-family: 'Syne', sans-serif; font-size: 0.66rem; font-weight: 700;
+    letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted);
+    margin-bottom: 0.85rem; margin-top: 1.2rem;
+    display: flex; align-items: center; gap: 0.5rem;
+  }
+
+  .section-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+  .section-count { color: var(--accent); font-size: 0.62rem; }
+
+  .cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(252px,1fr)); gap: 0.85rem; margin-bottom: 0.4rem; }
+
+  /* CARD */
+  .card {
+    background: var(--surface); border: 1.5px solid var(--border);
+    border-radius: 16px; padding: 1.05rem;
+    display: flex; flex-direction: column; gap: 0.7rem;
+    box-shadow: var(--shadow);
+    transition: transform 0.18s, box-shadow 0.18s, border-color 0.18s;
+    animation: fadeUp 0.26s ease both;
+    position: relative; overflow: hidden;
+  }
+
+  .card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+  .card.status-danger { border-color: rgba(239,68,68,0.3); background: #fffafa; }
+  .card.status-warn   { border-color: rgba(245,158,11,0.28); background: #fffdf5; }
+  .card.status-empty  { border-color: rgba(220,38,38,0.38); background: #fff5f5; }
+
+  .card-stripe { position: absolute; top: 0; left: 0; width: 100%; height: 3px; border-radius: 16px 16px 0 0; }
+  .cat-papeleria  .card-stripe { background: var(--cat-papeleria); }
+  .cat-cafeteria  .card-stripe { background: var(--cat-cafeteria); }
+  .cat-aseo       .card-stripe { background: var(--cat-aseo); }
+  .cat-mobiliario .card-stripe { background: var(--cat-mobiliario); }
+
+  .card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.5rem; }
+  .card-name { font-family: 'Syne', sans-serif; font-size: 0.84rem; font-weight: 700; line-height: 1.3; color: var(--text); flex: 1; }
+  .card-brand { font-size: 0.7rem; color: var(--muted); margin-top: 0.12rem; }
+
+  .status-badge { font-size: 0.63rem; font-weight: 600; padding: 0.16rem 0.52rem; border-radius: 100px; white-space: nowrap; flex-shrink: 0; }
+  .badge-ok     { background: #ecfdf5; color: var(--ok);    border: 1px solid #a7f3d0; }
+  .badge-warn   { background: #fffbeb; color: #d97706;      border: 1px solid #fde68a; }
+  .badge-danger { background: #fef2f2; color: var(--danger); border: 1px solid #fecaca; }
+  .badge-empty  { background: #fef2f2; color: var(--empty);  border: 1px solid #fca5a5; }
+
+  .card-meta { display: grid; grid-template-columns: 1fr 1fr; gap: 0.45rem; }
+
+  .meta-item { background: var(--surface2); border-radius: 10px; padding: 0.48rem 0.62rem; border: 1px solid var(--border); }
+  .meta-label { font-size: 0.6rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 0.15rem; font-weight: 500; }
+  .meta-value { font-size: 0.98rem; font-family: 'Syne', sans-serif; font-weight: 700; color: var(--text); }
+  .meta-value.big { font-size: 1.18rem; }
+  .full-width { grid-column: 1 / -1; }
+  .obs-text { font-size: 0.69rem; color: #92400e; font-style: italic; padding: 0.38rem 0.6rem; background: #fffbeb; border-radius: 8px; border: 1px solid #fde68a; }
+
+  .stock-bar-wrap { display: flex; flex-direction: column; gap: 0.3rem; }
+  .stock-bar-label { display: flex; justify-content: space-between; font-size: 0.68rem; font-weight: 500; }
+  .stock-bar-label span:first-child { color: var(--muted); }
+  .stock-bar-bg { height: 6px; background: var(--surface2); border-radius: 100px; overflow: hidden; border: 1px solid var(--border); }
+  .stock-bar-fill { height: 100%; border-radius: 100px; transition: width 0.5s cubic-bezier(0.22,1,0.36,1); }
+  .fill-ok     { background: var(--ok); }
+  .fill-warn   { background: var(--warn); }
+  .fill-danger { background: var(--danger); }
+  .fill-empty  { background: #d1d5db; }
+
+  /* STOCK CONTROLS */
+  .stock-controls {
+    display: flex; align-items: center; gap: 0.45rem;
+    background: var(--surface2); border: 1.5px solid var(--border);
+    border-radius: 12px; padding: 0.38rem 0.6rem;
+  }
+
+  .stock-controls label { font-size: 0.65rem; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; white-space: nowrap; flex-shrink: 0; }
+
+  .qty-input {
+    width: 50px; background: var(--surface); border: 1.5px solid var(--border);
+    border-radius: 8px; padding: 0.28rem 0.35rem;
+    font-family: 'Inter', sans-serif; font-size: 0.82rem; font-weight: 600;
+    color: var(--text); text-align: center; outline: none; transition: border-color 0.16s;
+  }
+
+  .qty-input:focus { border-color: var(--accent); }
+
+  .btn-add, .btn-sub {
+    width: 30px; height: 30px; border-radius: 8px; border: none;
+    cursor: pointer; font-size: 1.05rem; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.14s; flex-shrink: 0; line-height: 1;
+  }
+
+  .btn-add { background: #ecfdf5; color: #059669; border: 1.5px solid #a7f3d0; }
+  .btn-add:hover { background: var(--ok); color: #fff; border-color: var(--ok); }
+  .btn-sub { background: #fef2f2; color: #dc2626; border: 1.5px solid #fecaca; }
+  .btn-sub:hover { background: var(--danger); color: #fff; border-color: var(--danger); }
+  .btn-add:active, .btn-sub:active { transform: scale(0.9); }
+
+  .btn-add:disabled, .btn-sub:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+  .expiry-tag { display: inline-flex; align-items: center; gap: 0.32rem; font-size: 0.68rem; font-weight: 500; padding: 0.2rem 0.55rem; border-radius: 8px; }
+  .exp-ok   { background: #ecfdf5; color: var(--ok); }
+  .exp-soon { background: #fffbeb; color: #d97706; }
+  .exp-past { background: #fef2f2; color: var(--danger); }
+
+  .card-footer { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.4rem; }
+  .demanda-tag { font-size: 0.64rem; padding: 0.18rem 0.52rem; border-radius: 100px; font-weight: 500; border: 1px solid transparent; }
+  .demanda-si { background: #eff6ff; color: var(--accent); border-color: #bfdbfe; }
+  .demanda-no { background: var(--surface2); color: var(--muted); border-color: var(--border); }
+
+  /* SAVING INDICATOR */
+  .saving-ring {
+    width: 14px; height: 14px;
+    border: 2px solid #bfdbfe;
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    display: none;
+    flex-shrink: 0;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* LOGIN SCREEN */
+  .login-screen {
+    position: fixed; inset: 0;
+    background: rgba(245,246,250,0.97);
+    backdrop-filter: blur(8px);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 100;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .login-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    padding: 2.5rem 2.8rem;
+    box-shadow: var(--shadow-md);
+    max-width: 420px;
+    width: 90%;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    gap: 1.2rem;
+  }
+
+  .login-card h2 { font-family: 'Syne', sans-serif; font-size: 1.5rem; font-weight: 800; color: var(--text); }
+  .login-card p { font-size: 0.85rem; color: var(--muted); line-height: 1.6; }
+
+  .login-icon { font-size: 2.8rem; }
+
+  .btn-ms {
+    background: #0078d4;
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    padding: 0.75rem 1.5rem;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 0.6rem;
+    transition: all 0.16s;
+    width: 100%;
+  }
+
+  .btn-ms:hover { background: #006cbe; transform: translateY(-1px); box-shadow: 0 4px 14px rgba(0,120,212,0.3); }
+
+  .btn-ms svg { flex-shrink: 0; }
+
+  .login-note { font-size: 0.72rem; color: var(--muted); }
+
+  /* EMPTY STATE */
+  .empty-state { grid-column: 1/-1; text-align: center; padding: 4rem 2rem; color: var(--muted); }
+  .empty-state svg { opacity: 0.3; margin-bottom: 0.8rem; }
+  .empty-state p { font-size: 0.86rem; }
+
+  /* TOAST */
+  .toast {
+    position: fixed; bottom: 1.5rem; right: 1.5rem;
+    background: var(--text); color: #fff;
+    padding: 0.6rem 1.1rem; border-radius: 12px;
+    font-size: 0.8rem; font-weight: 500;
+    box-shadow: 0 4px 18px rgba(0,0,0,0.18);
+    z-index: 9999; opacity: 0; transform: translateY(10px);
+    transition: all 0.22s; pointer-events: none; max-width: 320px;
+  }
+
+  .toast.show { opacity: 1; transform: translateY(0); }
+  .toast.success { background: #059669; }
+  .toast.error-t { background: var(--danger); }
+
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+  @media (max-width: 600px) {
+    header, .controls, .grid-container { padding-left: 1rem; padding-right: 1rem; }
+    .summary-banner { margin-left: 1rem; margin-right: 1rem; }
+    .cards-grid { grid-template-columns: 1fr; }
+    .divider-v { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- LOGIN SCREEN -->
+<div class="login-screen" id="loginScreen">
+  <div class="login-card">
+    <div class="login-icon">📦</div>
+    <h2>Inventario Central</h2>
+    <p>Inicia sesión con tu cuenta Microsoft para conectar con tu Excel en OneDrive y mantener el inventario sincronizado en tiempo real.</p>
+    <button class="btn-ms" onclick="loginMicrosoft()">
+      <svg width="20" height="20" viewBox="0 0 21 21" fill="none"><rect x="1" y="1" width="9" height="9" fill="#f25022"/><rect x="11" y="1" width="9" height="9" fill="#7fba00"/><rect x="1" y="11" width="9" height="9" fill="#00a4ef"/><rect x="11" y="11" width="9" height="9" fill="#ffb900"/></svg>
+      Iniciar sesión con Microsoft
+    </button>
+    <p class="login-note">Se solicitará permiso para leer y editar tu OneDrive</p>
+  </div>
+</div>
+
+<header>
+  <div class="header-title">
+    <h1>Inventario <span>Central</span></h1>
+    <p>Papelería · Cafetería · Aseo · Mobiliario</p>
+  </div>
+  <div class="header-right">
+    <div class="sync-status" id="syncStatus">
+      <span class="sync-dot"></span>
+      <span id="syncLabel">Sin conectar</span>
+    </div>
+    <div class="header-stats" id="headerStats"></div>
+  </div>
+</header>
+
+<div class="controls">
+  <div class="search-wrap">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+    <input type="search" id="searchInput" placeholder="Buscar producto o marca…">
+  </div>
+  <div class="divider-v"></div>
+  <div class="filter-group" id="catFilters">
+    <button class="chip active" data-cat="TODOS">Todos</button>
+    <button class="chip" data-cat="PAPELERIA"><span class="chip-dot" style="background:var(--cat-papeleria)"></span>Papelería</button>
+    <button class="chip" data-cat="CAFETERIA"><span class="chip-dot" style="background:var(--cat-cafeteria)"></span>Cafetería</button>
+    <button class="chip" data-cat="ASEO"><span class="chip-dot" style="background:var(--cat-aseo)"></span>Aseo</button>
+    <button class="chip" data-cat="MOBILIARIO"><span class="chip-dot" style="background:var(--cat-mobiliario)"></span>Mobiliario</button>
+  </div>
+  <div class="divider-v"></div>
+  <div class="status-filters" id="statusFilters">
+    <button class="chip active" data-status="TODOS">Todo estado</button>
+    <button class="chip" data-status="danger">⚠ Crítico</button>
+    <button class="chip" data-status="warn">⚡ Bajo</button>
+    <button class="chip" data-status="empty">✕ Agotado</button>
+  </div>
+</div>
+
+<div class="summary-banner" id="summaryBanner"></div>
+<div class="grid-container" id="gridContainer"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+// ─── CONFIG ──────────────────────────────────────────────────────────────────
+const CLIENT_ID   = '7fae1576-0277-4593-916f-4446783a6b99';
+const TENANT      = 'organizations';
+const SCOPES      = ['Files.ReadWrite', 'User.Read'];
+const FILE_PATH   = 'inventario/Relacion inventario papeleria, cafeteria y aseo.xlsx';
+
+// Columnas del Excel (índices base 0)
+// A=ITEM, B=CATEGORIA, C=PRODUCTO, D=MARCA, E=DEMANDA CONSTANTE,
+// F=PRESENTACION, G=UNIDADES POR PAQUETE, H=ELEMENTOS SUELTOS, I=TOTAL, J=FECHA VENC, K=OBS
+const COL_TOTAL   = 8;  // columna I = índice 8
+const COL_SUELTOS = 7;  // columna H = índice 7
+const HEADER_ROW  = 1;  // fila 1 es encabezado, datos desde fila 2
+
+// ─── AUTH ────────────────────────────────────────────────────────────────────
+let accessToken = null;
+let fileId      = null;
+let excelRows   = [];   // filas crudas del Excel
+let inventory   = [];   // datos procesados
+
+async function loginMicrosoft() {
+  const authUrl = `https://login.microsoftonline.com/${TENANT}/oauth2/v2.0/authorize?`
+    + `client_id=${CLIENT_ID}`
+    + `&response_type=token`
+    + `&redirect_uri=${encodeURIComponent('http://localhost:5500/inventario.html')}`
+    + `&scope=${encodeURIComponent(SCOPES.join(' '))}`
+    + `&response_mode=fragment`
+    + `&prompt=select_account`;
+  location.href = authUrl;
+}
+
+function parseTokenFromHash() {
+  const hash = location.hash.substring(1);
+  const params = new URLSearchParams(hash);
+  return params.get('access_token');
+}
+
+// ─── GRAPH API ───────────────────────────────────────────────────────────────
+async function graphGet(url) {
+  const res = await fetch('https://graph.microsoft.com/v1.0' + url, {
+    headers: { 'Authorization': 'Bearer ' + accessToken }
+  });
+  if (!res.ok) throw new Error(`Graph error ${res.status}: ${await res.text()}`);
+  return res.json();
+}
+
+async function graphPatch(url, body) {
+  const res = await fetch('https://graph.microsoft.com/v1.0' + url, {
+    method: 'PATCH',
+    headers: {
+      'Authorization': 'Bearer ' + accessToken,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(body)
+  });
+  if (!res.ok) throw new Error(`Graph error ${res.status}: ${await res.text()}`);
+  return res.json();
+}
+
+// ─── LOAD EXCEL FROM ONEDRIVE ─────────────────────────────────────────────
+async function loadExcel() {
+  setSyncStatus('syncing', 'Conectando con OneDrive…');
+  try {
+    // Buscar el archivo por ruta
+    const encoded = encodeURIComponent(FILE_PATH);
+    const fileInfo = await graphGet(`/me/drive/root:/${encoded}`);
+    fileId = fileInfo.id;
+
+    // Leer la hoja "Inventario"
+    const data = await graphGet(`/me/drive/items/${fileId}/workbook/worksheets/Inventario%20/usedRange`);
+    excelRows = data.values;
+
+    // Convertir filas a objetos (saltar encabezado)
+    inventory = [];
+    for (let i = HEADER_ROW; i < excelRows.length; i++) {
+      const row = excelRows[i];
+      const prod = (row[2] || '').toString().trim();
+      if (!prod) continue;
+      const cat = (row[1] || '').toString().trim().toUpperCase().replace(/\s+/g,'');
+      inventory.push({
+        rowIndex: i,              // índice real en excelRows
+        id: i,
+        cat: cat === 'CAFETERIA' ? 'CAFETERIA' : cat,
+        prod: prod,
+        marca: row[3] ? row[3].toString().trim() : null,
+        demanda: (row[4] || '').toString().trim().toUpperCase() === 'SI' ? 'SI' : 'NO',
+        paq: parseInt(row[6]) || 0,
+        sueltos: parseInt(row[7]) || 0,
+        total: parseInt(row[8]) || 0,
+        venc: row[9] ? formatVenc(row[9]) : null,
+        obs: row[10] ? row[10].toString().trim() : null,
+      });
+    }
+
+    setSyncStatus('connected', 'Conectado · OneDrive');
+    renderHeaderStats();
+    renderGrid();
+    document.getElementById('loginScreen').style.display = 'none';
+    showToast('✓ Excel cargado desde OneDrive', 'success');
+  } catch(e) {
+    console.error(e);
+    setSyncStatus('error', 'Error de conexión');
+    showToast('Error al cargar el Excel: ' + e.message, 'error-t');
+    // Cargar datos locales de respaldo
+    loadLocalData();
+  }
+}
+
+function formatVenc(val) {
+  if (!val) return null;
+  if (typeof val === 'string' && val.includes('-')) return val.substring(0,10);
+  if (typeof val === 'number') {
+    // Serial date de Excel
+    const d = new Date((val - 25569) * 86400 * 1000);
+    return d.toISOString().substring(0,10);
+  }
+  return null;
+}
+
+// ─── SAVE TO EXCEL ────────────────────────────────────────────────────────
+async function saveRowToExcel(item) {
+  if (!fileId || !accessToken) return;
+  setSyncStatus('syncing', 'Guardando en Excel…');
+  try {
+    // Actualizar celda TOTAL (columna I) y SUELTOS (columna H)
+    // Fila en Excel = rowIndex + 1 (1-indexed)
+    const excelRow = item.rowIndex + 1;
+    const sheetName = 'Inventario ';
+
+    await graphPatch(
+      `/me/drive/items/${fileId}/workbook/worksheets('${encodeURIComponent(sheetName)}')/range(address='H${excelRow}:I${excelRow}')`,
+      { values: [[item.sueltos, item.total]] }
+    );
+
+    setSyncStatus('connected', 'Conectado · OneDrive');
+    showToast('✓ Guardado en Excel', 'success');
+  } catch(e) {
+    console.error(e);
+    setSyncStatus('error', 'Error al guardar');
+    showToast('No se pudo guardar en Excel: ' + e.message, 'error-t');
+  }
+}
+
+// ─── SYNC STATUS UI ───────────────────────────────────────────────────────
+function setSyncStatus(type, label) {
+  const el = document.getElementById('syncStatus');
+  const dot = el.querySelector('.sync-dot');
+  el.className = 'sync-status ' + type;
+  dot.className = 'sync-dot' + (type === 'syncing' ? ' pulse' : '');
+  document.getElementById('syncLabel').textContent = label;
+}
+
+// ─── LOCAL FALLBACK DATA ──────────────────────────────────────────────────
+function loadLocalData() {
+  inventory = [
+    {rowIndex:1,id:1,cat:"PAPELERIA",prod:"PORTAPLANO",marca:"GRAFITOS",demanda:"NO",paq:24,sueltos:9,total:177,venc:null,obs:null},
+    {rowIndex:2,id:2,cat:"PAPELERIA",prod:"GANCHO LEGAJADOR",marca:"RANK",demanda:"SI",paq:20,sueltos:0,total:11280,venc:null,obs:null},
+    {rowIndex:3,id:3,cat:"PAPELERIA",prod:"GANCHO LEGAJADOR",marca:"TRITON",demanda:"NO",paq:20,sueltos:0,total:1980,venc:null,obs:null},
+    {rowIndex:4,id:4,cat:"PAPELERIA",prod:"CARPETA DE YUTE",marca:null,demanda:"SI",paq:250,sueltos:258,total:3508,venc:null,obs:null},
+    {rowIndex:5,id:5,cat:"PAPELERIA",prod:"CARPETA LEGAJADORA DESACIFICADA OFICIO 320gr",marca:"NORMA",demanda:"SI",paq:50,sueltos:0,total:8300,venc:null,obs:null},
+    {rowIndex:6,id:6,cat:"CAFETERIA",prod:"CAFÉ",marca:"SELLO ROJO",demanda:"NO",paq:0,sueltos:0,total:0,venc:"2026-03-15",obs:"Se envían 4 unidades para oficinas del Caudal."},
+    {rowIndex:7,id:7,cat:"CAFETERIA",prod:"AROMÁTICA YERBABUENA",marca:"TISANAS ANGEL",demanda:"SI",paq:0,sueltos:0,total:0,venc:null,obs:null},
+    {rowIndex:8,id:8,cat:"CAFETERIA",prod:"AROMÁTICA MANZANILLA",marca:"TISANAS ANGEL",demanda:"SI",paq:20,sueltos:0,total:20,venc:"2027-05-01",obs:null},
+    {rowIndex:9,id:9,cat:"CAFETERIA",prod:"AROMÁTICA TORONJIL",marca:"TISANAS ANGEL",demanda:"SI",paq:20,sueltos:0,total:20,venc:"2026-04-01",obs:null},
+    {rowIndex:10,id:10,cat:"CAFETERIA",prod:"AROMÁTICA FRUTOS ROJOS",marca:"HINDU",demanda:"SI",paq:20,sueltos:0,total:40,venc:"2026-06-01",obs:null},
+    {rowIndex:11,id:11,cat:"CAFETERIA",prod:"AROMÁTICA LIMONARIA",marca:"TISANAS ANGEL",demanda:"NO",paq:20,sueltos:0,total:20,venc:"2027-05-01",obs:null},
+    {rowIndex:12,id:12,cat:"CAFETERIA",prod:"PALITO MEZCLADOR PLANO",marca:"BIOCHEVERE",demanda:"NO",paq:0,sueltos:0,total:0,venc:null,obs:null},
+    {rowIndex:13,id:13,cat:"CAFETERIA",prod:"PALITO MEZCLADOR REDONDO",marca:"PRODUCTOS MIO",demanda:"NO",paq:1000,sueltos:0,total:1000,venc:null,obs:null},
+    {rowIndex:17,id:17,cat:"CAFETERIA",prod:"AZÚCAR LIBRA",marca:"INCAUCA",demanda:"NO",paq:0,sueltos:1,total:1,venc:"2026-12-10",obs:null},
+    {rowIndex:18,id:18,cat:"MOBILIARIO",prod:"PARAL",marca:"INDUSTRIAS CRUZ HNOS",demanda:"NO",paq:20,sueltos:1,total:181,venc:null,obs:null},
+    {rowIndex:24,id:24,cat:"ASEO",prod:"PAPEL HIGIÉNICO",marca:null,demanda:"SI",paq:0,sueltos:4,total:4,venc:null,obs:null},
+    {rowIndex:25,id:25,cat:"ASEO",prod:"SERVILLETA",marca:null,demanda:"SI",paq:300,sueltos:0,total:900,venc:null,obs:null},
+    {rowIndex:26,id:26,cat:"ASEO",prod:"TOALLA PARA MANO",marca:null,demanda:"SI",paq:150,sueltos:0,total:2250,venc:null,obs:null},
+    {rowIndex:27,id:27,cat:"ASEO",prod:"DETERGENTE EN POLVO",marca:null,demanda:"SI",paq:0,sueltos:7,total:7,venc:null,obs:null},
+    {rowIndex:29,id:29,cat:"ASEO",prod:"BOLSA DE PAPELERA",marca:null,demanda:"SI",paq:100,sueltos:15,total:415,venc:null,obs:null},
+    {rowIndex:39,id:39,cat:"ASEO",prod:"JABÓN PARA MANOS",marca:null,demanda:"SI",paq:0,sueltos:7,total:7,venc:null,obs:null},
+    {rowIndex:47,id:47,cat:"ASEO",prod:"TAPABOCA",marca:null,demanda:"SI",paq:50,sueltos:0,total:750,venc:null,obs:null},
+    {rowIndex:51,id:51,cat:"PAPELERIA",prod:"BOLÍGRAFO",marca:null,demanda:"SI",paq:10,sueltos:4,total:14,venc:null,obs:null},
+    {rowIndex:80,id:80,cat:"PAPELERIA",prod:"RESMA",marca:null,demanda:"NO",paq:500,sueltos:0,total:2000,venc:null,obs:null},
+  ];
+  setSyncStatus('error', 'Modo sin conexión');
+  renderHeaderStats();
+  renderGrid();
+  document.getElementById('loginScreen').style.display = 'none';
+}
+
+// ─── LOGIC ────────────────────────────────────────────────────────────────
+const TODAY = new Date('2026-04-06');
+
+function getStatus(d) {
+  if (d.total === 0) return 'empty';
+  if (d.demanda === 'SI' && d.total <= 5)  return 'danger';
+  if (d.demanda === 'SI' && d.total <= 20) return 'warn';
+  if (d.total <= 2) return 'danger';
+  if (d.total <= 8) return 'warn';
+  return 'ok';
+}
+
+function getExpiry(venc) {
+  if (!venc) return null;
+  const exp = new Date(venc);
+  const diff = Math.ceil((exp - TODAY) / 86400000);
+  const fmt = exp.toLocaleDateString('es-CO', {day:'2-digit',month:'short',year:'numeric'});
+  if (diff < 0) return { label: `Venció ${fmt}`, cls: 'exp-past' };
+  if (diff <= 60) return { label: `Vence en ${diff} días`, cls: 'exp-soon' };
+  return { label: `Vence ${fmt}`, cls: 'exp-ok' };
+}
+
+function pct(d) {
+  if (d.total === 0) return 0;
+  const ref = d.paq > 0 ? d.paq * 5 : 50;
+  return Math.min(100, Math.round((d.total / ref) * 100));
+}
+
+function catCls(cat) {
+  return {PAPELERIA:'cat-papeleria',CAFETERIA:'cat-cafeteria',ASEO:'cat-aseo',MOBILIARIO:'cat-mobiliario'}[cat] || '';
+}
+
+// ─── RENDER ───────────────────────────────────────────────────────────────
+function renderCard(d) {
+  const st = getStatus(d);
+  const exp = getExpiry(d.venc);
+  const p = pct(d);
+  const badgeMap = {ok:'Disponible',warn:'Stock bajo',danger:'Crítico',empty:'Agotado'};
+
+  return `
+  <div class="card status-${st} ${catCls(d.cat)}" id="card-${d.id}">
+    <div class="card-stripe"></div>
+    <div class="card-top">
+      <div>
+        <div class="card-name">${d.prod}</div>
+        ${d.marca ? `<div class="card-brand">${d.marca}</div>` : ''}
+      </div>
+      <span class="status-badge badge-${st}" id="badge-${d.id}">${badgeMap[st]}</span>
+    </div>
+    <div class="card-meta">
+      <div class="meta-item">
+        <div class="meta-label">Total unidades</div>
+        <div class="meta-value big" id="total-${d.id}">${d.total.toLocaleString('es-CO')}</div>
+      </div>
+      <div class="meta-item">
+        <div class="meta-label">Sueltos / abiertos</div>
+        <div class="meta-value" id="sueltos-${d.id}">${d.sueltos}</div>
+      </div>
+      ${d.paq > 0 ? `<div class="meta-item"><div class="meta-label">Unid. por paquete</div><div class="meta-value">${d.paq.toLocaleString('es-CO')}</div></div>` : ''}
+      ${d.obs ? `<div class="obs-text full-width">${d.obs}</div>` : ''}
+    </div>
+    <div class="stock-bar-wrap">
+      <div class="stock-bar-label">
+        <span>Nivel de stock</span>
+        <span id="pct-${d.id}" style="color:var(--${st==='ok'?'ok':st==='warn'?'warn':st==='danger'?'danger':'empty'})">${p}%</span>
+      </div>
+      <div class="stock-bar-bg">
+        <div class="stock-bar-fill fill-${st}" id="bar-${d.id}" style="width:${p}%"></div>
+      </div>
+    </div>
+    <div class="stock-controls">
+      <label>Ajustar:</label>
+      <input class="qty-input" id="qty-${d.id}" type="number" min="1" value="1">
+      <div class="saving-ring" id="ring-${d.id}"></div>
+      <button class="btn-add" id="btnadd-${d.id}" onclick="adjustStock(${d.id}, 1)" title="Agregar">+</button>
+      <button class="btn-sub" id="btnsub-${d.id}" onclick="adjustStock(${d.id}, -1)" title="Descontar">−</button>
+    </div>
+    <div class="card-footer">
+      <span class="demanda-tag ${d.demanda==='SI'?'demanda-si':'demanda-no'}">
+        ${d.demanda==='SI'?'⚡ Demanda constante':'◦ Demanda baja'}
+      </span>
+      ${exp ? `<span class="expiry-tag ${exp.cls}">
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+        ${exp.label}
+      </span>` : ''}
+    </div>
+  </div>`;
+}
+
+async function adjustStock(id, dir) {
+  const d = inventory.find(x => x.id === id);
+  if (!d) return;
+  const qty = Math.max(1, parseInt(document.getElementById(`qty-${id}`)?.value) || 1);
+  const prev = d.total;
+  d.total = Math.max(0, d.total + dir * qty);
+  if (d.total === prev && dir === -1) return;
+  if (dir === -1) d.sueltos = Math.max(0, d.sueltos - Math.min(qty, d.sueltos));
+
+  // Update UI instantly
+  const st = getStatus(d);
+  const p  = pct(d);
+  const badgeMap = {ok:'Disponible',warn:'Stock bajo',danger:'Crítico',empty:'Agotado'};
+
+  document.getElementById(`total-${id}`).textContent = d.total.toLocaleString('es-CO');
+  document.getElementById(`sueltos-${id}`).textContent = d.sueltos;
+
+  const barEl = document.getElementById(`bar-${id}`);
+  barEl.style.width = p + '%';
+  barEl.className = `stock-bar-fill fill-${st}`;
+
+  const pctEl = document.getElementById(`pct-${id}`);
+  pctEl.textContent = p + '%';
+  pctEl.style.color = `var(--${st==='ok'?'ok':st==='warn'?'warn':st==='danger'?'danger':'empty'})`;
+
+  document.getElementById(`card-${id}`).className = `card status-${st} ${catCls(d.cat)}`;
+  const badge = document.getElementById(`badge-${id}`);
+  badge.textContent = badgeMap[st];
+  badge.className = `status-badge badge-${st}`;
+
+  // Show saving spinner
+  const ring = document.getElementById(`ring-${id}`);
+  const btnAdd = document.getElementById(`btnadd-${id}`);
+  const btnSub = document.getElementById(`btnsub-${id}`);
+  ring.style.display = 'block';
+  btnAdd.disabled = true;
+  btnSub.disabled = true;
+
+  // Save to Excel
+  await saveRowToExcel(d);
+
+  ring.style.display = 'none';
+  btnAdd.disabled = false;
+  btnSub.disabled = false;
+
+  renderSummary(getFiltered());
+  renderHeaderStats();
+}
+
+let toastTimer;
+function showToast(msg, type = '') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (type ? ' ' + type : '');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 3200);
+}
+
+let activeCat = 'TODOS', activeStatus = 'TODOS', searchTerm = '';
+
+function getFiltered() {
+  return inventory.filter(d => {
+    const cOk = activeCat === 'TODOS' || d.cat === activeCat;
+    const sOk = activeStatus === 'TODOS' || getStatus(d) === activeStatus;
+    const qOk = !searchTerm || d.prod.toLowerCase().includes(searchTerm) || (d.marca||'').toLowerCase().includes(searchTerm);
+    return cOk && sOk && qOk;
+  });
+}
+
+function renderSummary(filtered) {
+  const c = {total:filtered.length,empty:0,danger:0,warn:0,ok:0};
+  filtered.forEach(d => c[getStatus(d)]++);
+  document.getElementById('summaryBanner').innerHTML = `
+    <div class="summary-card s-total"><div class="s-num">${c.total}</div><div class="s-label">Productos</div></div>
+    <div class="summary-card s-ok"><div class="s-num">${c.ok}</div><div class="s-label">Disponibles</div></div>
+    <div class="summary-card s-warn"><div class="s-num">${c.warn}</div><div class="s-label">Stock bajo</div></div>
+    <div class="summary-card s-danger"><div class="s-num">${c.danger}</div><div class="s-label">Críticos</div></div>
+    <div class="summary-card s-empty"><div class="s-num">${c.empty}</div><div class="s-label">Agotados</div></div>`;
+}
+
+function renderHeaderStats() {
+  const empty  = inventory.filter(d => getStatus(d) === 'empty').length;
+  const danger = inventory.filter(d => getStatus(d) === 'danger').length;
+  document.getElementById('headerStats').innerHTML = `
+    <div class="stat-pill"><span class="dot" style="background:var(--accent)"></span>${inventory.length} productos</div>
+    <div class="stat-pill"><span class="dot" style="background:var(--danger)"></span>${empty+danger} requieren atención</div>`;
+}
+
+function renderGrid() {
+  const filtered = getFiltered();
+  renderSummary(filtered);
+  const cats = activeCat === 'TODOS' ? ['PAPELERIA','CAFETERIA','ASEO','MOBILIARIO'] : [activeCat];
+  const catLabels = {PAPELERIA:'Papelería',CAFETERIA:'Cafetería',ASEO:'Aseo',MOBILIARIO:'Mobiliario'};
+  let html = '';
+  cats.forEach(cat => {
+    const items = filtered.filter(d => d.cat === cat);
+    if (!items.length) return;
+    html += `<div class="section-label"><span class="chip-dot" style="background:var(--cat-${cat.toLowerCase()})"></span>${catLabels[cat]}<span class="section-count">${items.length}</span></div><div class="cards-grid">`;
+    items.forEach(d => html += renderCard(d));
+    html += '</div>';
+  });
+  if (!html) html = `<div class="cards-grid"><div class="empty-state"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg><p>No se encontraron productos.</p></div></div>`;
+  document.getElementById('gridContainer').innerHTML = html;
+}
+
+// ─── EVENTS ───────────────────────────────────────────────────────────────
+document.querySelectorAll('#catFilters .chip').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#catFilters .chip').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    activeCat = btn.dataset.cat;
+    renderGrid();
+  });
+});
+
+document.querySelectorAll('#statusFilters .chip').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#statusFilters .chip').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    activeStatus = btn.dataset.status;
+    renderGrid();
+  });
+});
+
+document.getElementById('searchInput').addEventListener('input', e => {
+  searchTerm = e.target.value.toLowerCase().trim();
+  renderGrid();
+});
+
+// ─── INIT ─────────────────────────────────────────────────────────────────
+const token = parseTokenFromHash();
+if (token) {
+  accessToken = token;
+  history.replaceState(null, '', location.pathname);
+  loadExcel();
+} else {
+  // Mostrar pantalla de login
+  document.getElementById('loginScreen').style.display = 'flex';
+}
+</script>
+</body>
+</html>
