@@ -571,13 +571,26 @@ async function graphPatch(url, body) {
 async function loadExcel() {
   setSyncStatus('syncing', 'Conectando con OneDrive…');
   try {
-    // Buscar el archivo por ruta
-    const encoded = encodeURIComponent(FILE_PATH);
-    const fileInfo = await graphGet(`/me/drive/root:/${encoded}`);
+    // Buscar el archivo por nombre en lugar de ruta fija
+    const fileName = 'Relacion inventario papeleria, cafeteria y aseo.xlsx';
+    const searchRes = await graphGet(`/me/drive/root/search(q='${encodeURIComponent(fileName)}')`);
+    
+    if (!searchRes.value || searchRes.value.length === 0) {
+      throw new Error(`No se encontró el archivo "${fileName}" en tu OneDrive.`);
+    }
+    
+    // Tomar el primer resultado que coincida exactamente con el nombre
+    const fileInfo = searchRes.value.find(f => f.name.toLowerCase() === fileName.toLowerCase()) || searchRes.value[0];
     fileId = fileInfo.id;
 
-    // Leer la hoja "Inventario"
-    const data = await graphGet(`/me/drive/items/${fileId}/workbook/worksheets/Inventario%20/usedRange`);
+    // Intentar leer la hoja "Inventario " o "Inventario"
+    let data;
+    try {
+      data = await graphGet(`/me/drive/items/${fileId}/workbook/worksheets('Inventario ')/usedRange`);
+    } catch (e) {
+      // Reintento con nombre sin espacio
+      data = await graphGet(`/me/drive/items/${fileId}/workbook/worksheets('Inventario')/usedRange`);
+    }
     excelRows = data.values;
 
     // Convertir filas a objetos (saltar encabezado)
@@ -635,12 +648,20 @@ async function saveRowToExcel(item) {
     // Actualizar celda TOTAL (columna I) y SUELTOS (columna H)
     // Fila en Excel = rowIndex + 1 (1-indexed)
     const excelRow = item.rowIndex + 1;
-    const sheetName = 'Inventario ';
-
-    await graphPatch(
-      `/me/drive/items/${fileId}/workbook/worksheets('${encodeURIComponent(sheetName)}')/range(address='H${excelRow}:I${excelRow}')`,
-      { values: [[item.sueltos, item.total]] }
-    );
+    
+    // Intentar con "Inventario " o "Inventario"
+    let success = false;
+    for (const sheetName of ['Inventario ', 'Inventario']) {
+      try {
+        await graphPatch(
+          `/me/drive/items/${fileId}/workbook/worksheets('${encodeURIComponent(sheetName)}')/range(address='H${excelRow}:I${excelRow}')`,
+          { values: [[item.sueltos, item.total]] }
+        );
+        success = true;
+        break;
+      } catch (e) { continue; }
+    }
+    if (!success) throw new Error("No se pudo encontrar la hoja 'Inventario'");
 
     setSyncStatus('connected', 'Conectado · OneDrive');
     showToast('✓ Guardado en Excel', 'success');
@@ -902,15 +923,21 @@ async function addNewProduct() {
 
   setSyncStatus('syncing', 'Agregando producto…');
   try {
-    const sheetName = 'Inventario ';
     // A=ITEM, B=CATEGORIA, C=PRODUCTO, D=MARCA, E=DEMANDA CONSTANTE, F=PRESENTACION, G=UNID PAQ, H=SUELTOS, I=TOTAL
     const newRow = [inventory.length + 1, cat, prod, marca, 'NO', 'UNIDAD', 0, 0, total];
     
-    await fetch(`https://graph.microsoft.com/v1.0/me/drive/items/${fileId}/workbook/worksheets('${encodeURIComponent(sheetName)}')/tables/Tabla1/rows`, {
-      method: 'POST',
-      headers: { 'Authorization': 'Bearer ' + accessToken, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ values: [newRow] })
-    });
+    let success = false;
+    for (const sheetName of ['Inventario ', 'Inventario']) {
+      try {
+        const res = await fetch(`https://graph.microsoft.com/v1.0/me/drive/items/${fileId}/workbook/worksheets('${encodeURIComponent(sheetName)}')/tables/Tabla1/rows`, {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer ' + accessToken, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ values: [newRow] })
+        });
+        if (res.ok) { success = true; break; }
+      } catch (e) { continue; }
+    }
+    if (!success) throw new Error("No se pudo agregar el producto. Verifica que exista la hoja 'Inventario' y la 'Tabla1'");
 
     showToast('✓ Producto agregado correctamente', 'success');
     closeModal();
