@@ -162,24 +162,7 @@
   .s-empty .s-num { color: var(--empty); }
 
   /* GRID */
-  .grid-container { 
-    padding: 1.1rem 2rem 3rem; 
-    max-width: 1400px; 
-    margin: 0 auto; 
-  }
-  .summary-banner {
-    margin: 1.1rem auto 0;
-    max-width: 1400px;
-    padding: 0 2rem;
-    display: grid; grid-template-columns: repeat(auto-fit, minmax(150px,1fr)); gap: 0.65rem;
-  }
-  header, .controls {
-    padding-left: calc((100% - 1400px) / 2 + 2rem);
-    padding-right: calc((100% - 1400px) / 2 + 2rem);
-  }
-  @media (max-width: 1400px) {
-    header, .controls { padding-left: 2rem; padding-right: 2rem; }
-  }
+  .grid-container { padding: 1.1rem 2rem 3rem; }
 
   .section-label {
     font-family: 'Syne', sans-serif; font-size: 0.66rem; font-weight: 700;
@@ -379,38 +362,6 @@
     .cards-grid { grid-template-columns: 1fr; }
     .divider-v { display: none; }
   }
-
-  /* MODAL */
-  .modal-overlay {
-    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(26,28,46,0.6); backdrop-filter: blur(4px);
-    display: none; align-items: center; justify-content: center; z-index: 10000;
-    padding: 1rem;
-  }
-  .modal-content {
-    background: var(--surface); border-radius: 20px; width: 100%; max-width: 500px;
-    box-shadow: var(--shadow-md); overflow: hidden; animation: fadeUp 0.3s ease;
-  }
-  .modal-header { padding: 1.2rem 1.5rem; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
-  .modal-header h3 { font-family: 'Syne', sans-serif; font-size: 1.1rem; }
-  .modal-body { padding: 1.5rem; display: grid; gap: 1rem; }
-  .form-group { display: flex; flex-direction: column; gap: 0.4rem; }
-  .form-group label { font-size: 0.75rem; font-weight: 600; color: var(--muted); }
-  .form-group input, .form-group select, .form-group textarea {
-    padding: 0.6rem; border: 1.5px solid var(--border); border-radius: 8px; font-family: 'Inter', sans-serif; font-size: 0.85rem;
-  }
-  .modal-footer { padding: 1.2rem 1.5rem; border-top: 1px solid var(--border); display: flex; gap: 0.8rem; justify-content: flex-end; }
-  .btn-secondary { background: var(--surface2); border: none; padding: 0.6rem 1.2rem; border-radius: 8px; font-weight: 600; cursor: pointer; }
-  .btn-primary { background: var(--accent); color: #fff; border: none; padding: 0.6rem 1.2rem; border-radius: 8px; font-weight: 600; cursor: pointer; }
-  
-  .fab-add {
-    position: fixed; bottom: 2rem; right: 2rem; width: 56px; height: 56px;
-    background: var(--accent); color: #fff; border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    box-shadow: 0 4px 15px rgba(79,110,247,0.4); cursor: pointer; z-index: 100;
-    transition: transform 0.2s; border: none; font-size: 24px;
-  }
-  .fab-add:hover { transform: scale(1.1); }
 </style>
 </head>
 <body>
@@ -440,9 +391,6 @@
       <span id="syncLabel">Sin conectar</span>
     </div>
     <div class="header-stats" id="headerStats"></div>
-    <button class="btn-login" onclick="logout()" style="background: var(--surface2); color: var(--muted); border: 1px solid var(--border);">
-      Cerrar sesión
-    </button>
   </div>
 </header>
 
@@ -472,49 +420,10 @@
 <div class="grid-container" id="gridContainer"></div>
 <div class="toast" id="toast"></div>
 
-<!-- MODAL NUEVO PRODUCTO -->
-<div class="modal-overlay" id="modalAdd">
-  <div class="modal-content">
-    <div class="modal-header">
-      <h3>Nuevo Producto</h3>
-      <button class="btn-secondary" onclick="closeModal()" style="padding: 0.2rem 0.5rem;">✕</button>
-    </div>
-    <div class="modal-body">
-      <div class="form-group">
-        <label>Categoría</label>
-        <select id="newCat">
-          <option value="PAPELERIA">Papelería</option>
-          <option value="CAFETERIA">Cafetería</option>
-          <option value="ASEO">Aseo</option>
-          <option value="MOBILIARIO">Mobiliario</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label>Nombre del Producto</label>
-        <input type="text" id="newProd" placeholder="Ej: Resma de papel">
-      </div>
-      <div class="form-group">
-        <label>Marca</label>
-        <input type="text" id="newMarca" placeholder="Ej: Norma">
-      </div>
-      <div class="form-group">
-        <label>Unidades Iniciales</label>
-        <input type="number" id="newTotal" value="0" min="0">
-      </div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn-secondary" onclick="closeModal()">Cancelar</button>
-      <button class="btn-primary" onclick="addNewProduct()">Guardar Producto</button>
-    </div>
-  </div>
-</div>
-
-<button class="fab-add" onclick="openModal()" title="Agregar nuevo producto">+</button>
-
 <script>
 // ─── CONFIG ──────────────────────────────────────────────────────────────────
-const CLIENT_ID   = 'ab85965d-223e-4ff7-b302-d9902593c784';
-const TENANT      = '475c298a-c9c9-4796-9911-0b3bbebfea6d';
+const CLIENT_ID   = '7fae1576-0277-4593-916f-4446783a6b99';
+const TENANT      = 'organizations';
 const SCOPES      = ['Files.ReadWrite', 'User.Read'];
 const FILE_PATH   = 'inventario/Relacion inventario papeleria, cafeteria y aseo.xlsx';
 
@@ -535,7 +444,7 @@ async function loginMicrosoft() {
   const authUrl = `https://login.microsoftonline.com/${TENANT}/oauth2/v2.0/authorize?`
     + `client_id=${CLIENT_ID}`
     + `&response_type=token`
-    + `&redirect_uri=${encodeURIComponent(window.location.origin + window.location.pathname)}`
+    + `&redirect_uri=${encodeURIComponent('http://localhost:5500/inventario.html')}`
     + `&scope=${encodeURIComponent(SCOPES.join(' '))}`
     + `&response_mode=fragment`
     + `&prompt=select_account`;
@@ -574,26 +483,13 @@ async function graphPatch(url, body) {
 async function loadExcel() {
   setSyncStatus('syncing', 'Conectando con OneDrive…');
   try {
-    // Buscar el archivo por nombre en lugar de ruta fija
-    const fileName = 'Relacion inventario papeleria, cafeteria y aseo.xlsx';
-    const searchRes = await graphGet(`/me/drive/root/search(q='${encodeURIComponent(fileName)}')`);
-    
-    if (!searchRes.value || searchRes.value.length === 0) {
-      throw new Error(`No se encontró el archivo "${fileName}" en tu OneDrive.`);
-    }
-    
-    // Tomar el primer resultado que coincida exactamente con el nombre
-    const fileInfo = searchRes.value.find(f => f.name.toLowerCase() === fileName.toLowerCase()) || searchRes.value[0];
+    // Buscar el archivo por ruta
+    const encoded = encodeURIComponent(FILE_PATH);
+    const fileInfo = await graphGet(`/me/drive/root:/${encoded}`);
     fileId = fileInfo.id;
 
-    // Intentar leer la hoja "Inventario " o "Inventario"
-    let data;
-    try {
-      data = await graphGet(`/me/drive/items/${fileId}/workbook/worksheets('Inventario ')/usedRange`);
-    } catch (e) {
-      // Reintento con nombre sin espacio
-      data = await graphGet(`/me/drive/items/${fileId}/workbook/worksheets('Inventario')/usedRange`);
-    }
+    // Leer la hoja "Inventario"
+    const data = await graphGet(`/me/drive/items/${fileId}/workbook/worksheets/Inventario%20/usedRange`);
     excelRows = data.values;
 
     // Convertir filas a objetos (saltar encabezado)
@@ -651,20 +547,12 @@ async function saveRowToExcel(item) {
     // Actualizar celda TOTAL (columna I) y SUELTOS (columna H)
     // Fila en Excel = rowIndex + 1 (1-indexed)
     const excelRow = item.rowIndex + 1;
-    
-    // Intentar con "Inventario " o "Inventario"
-    let success = false;
-    for (const sheetName of ['Inventario ', 'Inventario']) {
-      try {
-        await graphPatch(
-          `/me/drive/items/${fileId}/workbook/worksheets('${encodeURIComponent(sheetName)}')/range(address='H${excelRow}:I${excelRow}')`,
-          { values: [[item.sueltos, item.total]] }
-        );
-        success = true;
-        break;
-      } catch (e) { continue; }
-    }
-    if (!success) throw new Error("No se pudo encontrar la hoja 'Inventario'");
+    const sheetName = 'Inventario ';
+
+    await graphPatch(
+      `/me/drive/items/${fileId}/workbook/worksheets('${encodeURIComponent(sheetName)}')/range(address='H${excelRow}:I${excelRow}')`,
+      { values: [[item.sueltos, item.total]] }
+    );
 
     setSyncStatus('connected', 'Conectado · OneDrive');
     showToast('✓ Guardado en Excel', 'success');
@@ -912,47 +800,6 @@ function renderGrid() {
   document.getElementById('gridContainer').innerHTML = html;
 }
 
-// ─── MODAL FUNCTIONS ──────────────────────────────────────────────────────
-function openModal() { document.getElementById('modalAdd').style.display = 'flex'; }
-function closeModal() { document.getElementById('modalAdd').style.display = 'none'; }
-
-async function addNewProduct() {
-  const cat = document.getElementById('newCat').value;
-  const prod = document.getElementById('newProd').value.trim();
-  const marca = document.getElementById('newMarca').value.trim();
-  const total = parseInt(document.getElementById('newTotal').value) || 0;
-
-  if (!prod) { showToast('El nombre del producto es obligatorio', 'error-t'); return; }
-
-  setSyncStatus('syncing', 'Agregando producto…');
-  try {
-    // A=ITEM, B=CATEGORIA, C=PRODUCTO, D=MARCA, E=DEMANDA CONSTANTE, F=PRESENTACION, G=UNID PAQ, H=SUELTOS, I=TOTAL
-    const newRow = [inventory.length + 1, cat, prod, marca, 'NO', 'UNIDAD', 0, 0, total];
-    
-    let success = false;
-    for (const sheetName of ['Inventario ', 'Inventario']) {
-      try {
-        const res = await fetch(`https://graph.microsoft.com/v1.0/me/drive/items/${fileId}/workbook/worksheets('${encodeURIComponent(sheetName)}')/tables/Tabla1/rows`, {
-          method: 'POST',
-          headers: { 'Authorization': 'Bearer ' + accessToken, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ values: [newRow] })
-        });
-        if (res.ok) { success = true; break; }
-      } catch (e) { continue; }
-    }
-    if (!success) throw new Error("No se pudo agregar el producto. Verifica que exista la hoja 'Inventario' y la 'Tabla1'");
-
-    showToast('✓ Producto agregado correctamente', 'success');
-    closeModal();
-    await loadExcel(); // Recargar para ver el nuevo producto
-  } catch (e) {
-    console.error(e);
-    // Si falla por tabla, intentar append al final del rango usado
-    showToast('Error al guardar. Asegúrate de que el Excel tenga una tabla llamada "Tabla1"', 'error-t');
-    setSyncStatus('connected', 'Conectado');
-  }
-}
-
 // ─── EVENTS ───────────────────────────────────────────────────────────────
 document.querySelectorAll('#catFilters .chip').forEach(btn => {
   btn.addEventListener('click', () => {
@@ -977,51 +824,16 @@ document.getElementById('searchInput').addEventListener('input', e => {
   renderGrid();
 });
 
-// ─── AUTH HELPERS ──────────────────────────────────────────────────────────
-function logout() {
-  localStorage.removeItem('ms_access_token');
-  localStorage.removeItem('ms_token_expiry');
-  accessToken = null;
-  document.getElementById('loginScreen').style.display = 'flex';
-  setSyncStatus('error', 'Sesión cerrada');
-}
-
 // ─── INIT ─────────────────────────────────────────────────────────────────
-async function initApp() {
-  const tokenFromHash = parseTokenFromHash();
-  
-  if (tokenFromHash) {
-    accessToken = tokenFromHash;
-    localStorage.setItem('ms_access_token', accessToken);
-    localStorage.setItem('ms_token_expiry', Date.now() + 3500 * 1000);
-    history.replaceState(null, '', location.pathname);
-  } else {
-    const savedToken = localStorage.getItem('ms_access_token');
-    const expiry = localStorage.getItem('ms_token_expiry');
-    if (savedToken && expiry && Date.now() < parseInt(expiry)) {
-      accessToken = savedToken;
-    }
-  }
-
-  if (accessToken) {
-    try {
-      await loadExcel();
-    } catch (e) {
-      console.error("Error inicializando con token guardado:", e);
-      if (e.message.includes('401') || e.message.includes('Unauthorized')) {
-        logout();
-      } else {
-        // Si es otro error (como 404), mostrar la app pero con error
-        document.getElementById('loginScreen').style.display = 'none';
-      }
-    }
-  } else {
-    document.getElementById('loginScreen').style.display = 'flex';
-  }
+const token = parseTokenFromHash();
+if (token) {
+  accessToken = token;
+  history.replaceState(null, '', location.pathname);
+  loadExcel();
+} else {
+  // Mostrar pantalla de login
+  document.getElementById('loginScreen').style.display = 'flex';
 }
-
-initApp();
 </script>
 </body>
 </html>
-
