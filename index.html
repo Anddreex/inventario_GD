@@ -444,7 +444,7 @@ async function loginMicrosoft() {
   const authUrl = `https://login.microsoftonline.com/${TENANT}/oauth2/v2.0/authorize?`
     + `client_id=${CLIENT_ID}`
     + `&response_type=token`
-    + `&redirect_uri=${encodeURIComponent('http://localhost:5500/inventario.html')}`
+    + `&redirect_uri=${encodeURIComponent('https://anddreex.github.io/inventario_GD/')}`
     + `&scope=${encodeURIComponent(SCOPES.join(' '))}`
     + `&response_mode=fragment`
     + `&prompt=select_account`;
