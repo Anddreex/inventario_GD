@@ -607,6 +607,212 @@ td.td-brand { font-size: 0.72rem; color: var(--text3); font-family: 'DM Mono', m
   .sep { display: none; }
   .toolbar-right .btn-sort span { display: none; }
 }
+
+/* ── BTN NUEVO ELEMENTO ── */
+.btn-new {
+  display: inline-flex; align-items: center; gap: 0.4rem;
+  padding: 0.42rem 0.9rem;
+  background: var(--accent); color: #fff;
+  border: none; border-radius: var(--radius-sm);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.78rem; font-weight: 600;
+  cursor: pointer; white-space: nowrap;
+  transition: all 0.15s;
+  box-shadow: 0 0 0 0 rgba(91,124,246,0);
+}
+.btn-new:hover {
+  background: #4a68e0;
+  box-shadow: 0 4px 18px rgba(91,124,246,0.35);
+  transform: translateY(-1px);
+}
+.btn-new:active { transform: scale(0.96); }
+
+/* ── MODAL OVERLAY ── */
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(10,12,18,0.82);
+  backdrop-filter: blur(6px);
+  z-index: 200;
+  display: flex; align-items: center; justify-content: center;
+  padding: 1rem;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.2s;
+}
+.modal-overlay.open { opacity: 1; pointer-events: all; }
+
+/* ── MODAL CARD ── */
+.modal {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 18px;
+  box-shadow: var(--shadow-lg);
+  width: 100%; max-width: 520px;
+  max-height: 90vh;
+  display: flex; flex-direction: column;
+  transform: translateY(14px) scale(0.98);
+  transition: transform 0.22s cubic-bezier(0.22,1,0.36,1);
+  overflow: hidden;
+}
+.modal-overlay.open .modal { transform: translateY(0) scale(1); }
+
+.modal-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 1.25rem 1.5rem 1rem;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.modal-head h2 { font-size: 1rem; font-weight: 700; color: var(--text); }
+.modal-head p  { font-size: 0.72rem; color: var(--text3); margin-top: 0.15rem; }
+
+.modal-close {
+  width: 32px; height: 32px; border-radius: 8px;
+  background: var(--surface2); border: 1px solid var(--border);
+  color: var(--text2); cursor: pointer; font-size: 1rem;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.13s; flex-shrink: 0;
+}
+.modal-close:hover { background: var(--surface3); color: var(--text); }
+
+.modal-body {
+  overflow-y: auto; padding: 1.25rem 1.5rem;
+  display: flex; flex-direction: column; gap: 1rem;
+  flex: 1;
+}
+
+/* ── CATEGORY SELECTOR ── */
+.field-label {
+  font-size: 0.65rem; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.09em;
+  color: var(--text2); margin-bottom: 0.45rem;
+}
+.cat-selector { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+.cat-opt {
+  flex: 1; min-width: 90px;
+  padding: 0.55rem 0.6rem;
+  border-radius: 10px; border: 1.5px solid var(--border2);
+  background: var(--surface2);
+  cursor: pointer; text-align: center;
+  transition: all 0.14s;
+  display: flex; flex-direction: column; align-items: center; gap: 0.25rem;
+}
+.cat-opt:hover { border-color: var(--border2); background: var(--surface3); }
+.cat-opt.selected { border-color: var(--c); background: color-mix(in srgb, var(--c) 12%, transparent); }
+.cat-opt .co-dot { width: 10px; height: 10px; border-radius: 50%; margin-bottom: 0.1rem; }
+.cat-opt .co-name { font-size: 0.72rem; font-weight: 600; color: var(--text2); }
+.cat-opt.selected .co-name { color: var(--text); }
+
+/* ── FORM FIELDS ── */
+.form-row { display: flex; gap: 0.65rem; }
+.form-group { display: flex; flex-direction: column; flex: 1; }
+.form-group.full { flex: 2; }
+
+.field-input, .field-select, .field-textarea {
+  background: var(--surface2);
+  border: 1.5px solid var(--border2);
+  border-radius: var(--radius-sm);
+  padding: 0.5rem 0.7rem;
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.83rem;
+  outline: none;
+  transition: border-color 0.14s, box-shadow 0.14s;
+  width: 100%;
+}
+.field-input::placeholder, .field-textarea::placeholder { color: var(--text3); }
+.field-input:focus, .field-select:focus, .field-textarea:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(91,124,246,0.13);
+}
+.field-input.error { border-color: var(--danger); }
+
+.field-select { appearance: none; cursor: pointer; }
+.field-select option { background: var(--surface2); }
+
+.field-textarea { resize: vertical; min-height: 62px; line-height: 1.5; }
+
+.field-hint { font-size: 0.62rem; color: var(--text3); margin-top: 0.25rem; }
+
+/* demanda toggle */
+.toggle-row {
+  display: flex; align-items: center; justify-content: space-between;
+  background: var(--surface2); border: 1.5px solid var(--border2);
+  border-radius: var(--radius-sm); padding: 0.5rem 0.7rem;
+}
+.toggle-info { font-size: 0.82rem; color: var(--text2); }
+.toggle-info small { display: block; font-size: 0.62rem; color: var(--text3); margin-top: 0.1rem; }
+.toggle-switch { position: relative; width: 36px; height: 20px; flex-shrink: 0; }
+.toggle-switch input { opacity: 0; width: 0; height: 0; }
+.toggle-knob {
+  position: absolute; inset: 0; cursor: pointer;
+  background: var(--surface3); border-radius: 99px;
+  border: 1.5px solid var(--border2);
+  transition: all 0.2s;
+}
+.toggle-knob::after {
+  content: ''; position: absolute;
+  width: 12px; height: 12px; border-radius: 50%;
+  background: var(--text3); top: 2px; left: 2px;
+  transition: all 0.2s;
+}
+.toggle-switch input:checked + .toggle-knob { background: var(--accent-dim); border-color: var(--accent); }
+.toggle-switch input:checked + .toggle-knob::after { background: var(--accent); transform: translateX(16px); }
+
+/* ── SECTION DIVIDER ── */
+.form-section {
+  border-top: 1px solid var(--border);
+  padding-top: 0.85rem;
+}
+.form-section-title {
+  font-size: 0.62rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.1em;
+  color: var(--text3); margin-bottom: 0.75rem;
+}
+
+/* ── PREVIEW BADGE ── */
+.preview-strip {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0.6rem 0.85rem;
+  display: flex; align-items: center; gap: 0.6rem;
+  flex-wrap: wrap;
+}
+.preview-strip .ps-name { font-size: 0.82rem; font-weight: 600; color: var(--text); flex: 1; }
+.preview-strip .ps-brand { font-size: 0.7rem; color: var(--text3); font-family: 'DM Mono', monospace; }
+.preview-strip .ps-total { font-family: 'DM Mono', monospace; font-size: 1rem; font-weight: 600; }
+
+/* ── MODAL FOOTER ── */
+.modal-foot {
+  display: flex; gap: 0.6rem; justify-content: flex-end;
+  padding: 1rem 1.5rem 1.25rem;
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.btn-cancel {
+  padding: 0.5rem 1.1rem;
+  background: var(--surface2); border: 1px solid var(--border2);
+  border-radius: var(--radius-sm); color: var(--text2);
+  font-family: 'DM Sans', sans-serif; font-size: 0.82rem; font-weight: 500;
+  cursor: pointer; transition: all 0.14s;
+}
+.btn-cancel:hover { background: var(--surface3); color: var(--text); }
+.btn-save {
+  padding: 0.5rem 1.4rem;
+  background: var(--accent); border: none;
+  border-radius: var(--radius-sm); color: #fff;
+  font-family: 'DM Sans', sans-serif; font-size: 0.82rem; font-weight: 600;
+  cursor: pointer; display: flex; align-items: center; gap: 0.4rem;
+  transition: all 0.14s;
+}
+.btn-save:hover { background: #4a68e0; }
+.btn-save:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-save .save-ring {
+  width: 12px; height: 12px; border-radius: 50%;
+  border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff;
+  animation: spin 0.65s linear infinite; display: none;
+}
+.btn-save.saving .save-ring { display: block; }
+.btn-save.saving .save-txt { display: none; }
 </style>
 </head>
 <body>
@@ -672,6 +878,12 @@ td.td-brand { font-size: 0.72rem; color: var(--text3); font-family: 'DM Mono', m
     <button class="chip" data-status="empty">Agotado</button>
   </div>
   <div class="toolbar-right">
+    <button class="btn-new" onclick="openModal()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <path d="M12 5v14M5 12h14"/>
+      </svg>
+      Agregar elemento
+    </button>
     <button class="btn-sort" id="sortBtn" onclick="cycleSort()">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <path d="M3 6h18M7 12h10M11 18h2"/>
@@ -699,6 +911,143 @@ td.td-brand { font-size: 0.72rem; color: var(--text3); font-family: 'DM Mono', m
 
 <!-- MAIN -->
 <div class="main" id="gridContainer"></div>
+
+<!-- MODAL AGREGAR ELEMENTO -->
+<div class="modal-overlay" id="modalOverlay" onclick="handleOverlayClick(event)">
+  <div class="modal" id="modal">
+
+    <div class="modal-head">
+      <div>
+        <h2>Agregar elemento</h2>
+        <p>El producto se añadirá al Excel en OneDrive automáticamente</p>
+      </div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+
+    <div class="modal-body">
+
+      <!-- CATEGORÍA -->
+      <div>
+        <div class="field-label">Categoría *</div>
+        <div class="cat-selector">
+          <div class="cat-opt" data-cat="PAPELERIA" style="--c:var(--cat-papeleria)" onclick="selectCat(this)">
+            <div class="co-dot" style="background:var(--cat-papeleria)"></div>
+            <span class="co-name">Papelería</span>
+          </div>
+          <div class="cat-opt" data-cat="CAFETERIA" style="--c:var(--cat-cafeteria)" onclick="selectCat(this)">
+            <div class="co-dot" style="background:var(--cat-cafeteria)"></div>
+            <span class="co-name">Cafetería</span>
+          </div>
+          <div class="cat-opt" data-cat="ASEO" style="--c:var(--cat-aseo)" onclick="selectCat(this)">
+            <div class="co-dot" style="background:var(--cat-aseo)"></div>
+            <span class="co-name">Aseo</span>
+          </div>
+          <div class="cat-opt" data-cat="MOBILIARIO" style="--c:var(--cat-mobiliario)" onclick="selectCat(this)">
+            <div class="co-dot" style="background:var(--cat-mobiliario)"></div>
+            <span class="co-name">Mobiliario</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- PRODUCTO Y MARCA -->
+      <div class="form-row">
+        <div class="form-group full">
+          <div class="field-label">Producto *</div>
+          <input class="field-input" id="f-prod" type="text" placeholder="Ej: RESMA PAPEL CARTA"
+            oninput="updatePreview()">
+        </div>
+        <div class="form-group">
+          <div class="field-label">Marca</div>
+          <input class="field-input" id="f-marca" type="text" placeholder="Ej: NORMA"
+            oninput="updatePreview()">
+        </div>
+      </div>
+
+      <!-- STOCK -->
+      <div class="form-section">
+        <div class="form-section-title">📦 Stock inicial</div>
+        <div class="form-row">
+          <div class="form-group">
+            <div class="field-label">Unidades por paquete</div>
+            <input class="field-input" id="f-paq" type="number" min="0" value="0" placeholder="0"
+              oninput="updatePreview()">
+            <span class="field-hint">Cuántas unidades trae cada paquete</span>
+          </div>
+          <div class="form-group">
+            <div class="field-label">Elementos sueltos</div>
+            <input class="field-input" id="f-sueltos" type="number" min="0" value="0" placeholder="0"
+              oninput="updatePreview()">
+            <span class="field-hint">Unidades que no están en paquete</span>
+          </div>
+          <div class="form-group">
+            <div class="field-label">Total en stock *</div>
+            <input class="field-input" id="f-total" type="number" min="0" value="0" placeholder="0"
+              oninput="updatePreview()">
+            <span class="field-hint">Cantidad total disponible</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- PRESENTACIÓN Y DEMANDA -->
+      <div class="form-section">
+        <div class="form-section-title">⚙ Características</div>
+        <div class="form-row" style="margin-bottom:0.65rem">
+          <div class="form-group full">
+            <div class="field-label">Presentación</div>
+            <input class="field-input" id="f-pres" type="text" placeholder="Ej: Paquete x 500 hojas">
+          </div>
+        </div>
+        <div class="toggle-row">
+          <div class="toggle-info">
+            Demanda constante
+            <small>Activa umbrales de alerta más estrictos</small>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="f-demanda">
+            <span class="toggle-knob"></span>
+          </label>
+        </div>
+      </div>
+
+      <!-- VENCIMIENTO Y OBSERVACIONES -->
+      <div class="form-section">
+        <div class="form-section-title">📋 Información adicional</div>
+        <div class="form-row" style="margin-bottom:0.65rem">
+          <div class="form-group">
+            <div class="field-label">Fecha de vencimiento</div>
+            <input class="field-input" id="f-venc" type="date">
+            <span class="field-hint">Opcional · solo si aplica</span>
+          </div>
+        </div>
+        <div class="form-group">
+          <div class="field-label">Observaciones</div>
+          <textarea class="field-textarea" id="f-obs" placeholder="Notas o comentarios sobre este producto…"></textarea>
+        </div>
+      </div>
+
+      <!-- PREVIEW -->
+      <div>
+        <div class="field-label">Vista previa</div>
+        <div class="preview-strip" id="preview-strip">
+          <span class="ps-name" id="pv-name" style="color:var(--text3)">Nombre del producto</span>
+          <span class="ps-brand" id="pv-brand"></span>
+          <span class="ps-total" id="pv-total" style="color:var(--text3)">0</span>
+          <span id="pv-badge" class="badge badge-empty">Agotado</span>
+        </div>
+      </div>
+
+    </div><!-- /modal-body -->
+
+    <div class="modal-foot">
+      <button class="btn-cancel" onclick="closeModal()">Cancelar</button>
+      <button class="btn-save" id="btnSave" onclick="saveNewItem()">
+        <div class="save-ring"></div>
+        <span class="save-txt">Guardar en Excel</span>
+      </button>
+    </div>
+
+  </div><!-- /modal -->
+</div><!-- /modal-overlay -->
 
 <div class="toast" id="toast"></div>
 
@@ -1213,6 +1562,176 @@ document.querySelectorAll('#statusFilters .chip').forEach(btn => {
 document.getElementById('searchInput').addEventListener('input', e => {
   searchTerm = e.target.value.toLowerCase().trim();
   renderGrid();
+});
+
+// ─── MODAL ────────────────────────────────────────────────────────────────
+let selectedCat = null;
+
+function openModal() {
+  // reset form
+  selectedCat = null;
+  document.querySelectorAll('.cat-opt').forEach(el => el.classList.remove('selected'));
+  ['f-prod','f-marca','f-paq','f-sueltos','f-total','f-pres','f-obs'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) { el.value = el.type === 'number' ? '0' : ''; el.classList.remove('error'); }
+  });
+  document.getElementById('f-venc').value = '';
+  document.getElementById('f-demanda').checked = false;
+  updatePreview();
+  document.getElementById('modalOverlay').classList.add('open');
+  setTimeout(() => document.getElementById('f-prod').focus(), 180);
+}
+
+function closeModal() {
+  document.getElementById('modalOverlay').classList.remove('open');
+}
+
+function handleOverlayClick(e) {
+  if (e.target === document.getElementById('modalOverlay')) closeModal();
+}
+
+function selectCat(el) {
+  document.querySelectorAll('.cat-opt').forEach(o => o.classList.remove('selected'));
+  el.classList.add('selected');
+  selectedCat = el.dataset.cat;
+  updatePreview();
+}
+
+function updatePreview() {
+  const prod  = (document.getElementById('f-prod').value || '').trim();
+  const marca = (document.getElementById('f-marca').value || '').trim();
+  const total = parseInt(document.getElementById('f-total').value) || 0;
+  const dem   = document.getElementById('f-demanda').checked;
+
+  const pvName  = document.getElementById('pv-name');
+  const pvBrand = document.getElementById('pv-brand');
+  const pvTotal = document.getElementById('pv-total');
+  const pvBadge = document.getElementById('pv-badge');
+
+  pvName.textContent  = prod  || 'Nombre del producto';
+  pvName.style.color  = prod  ? 'var(--text)' : 'var(--text3)';
+  pvBrand.textContent = marca || '';
+
+  pvTotal.textContent = total.toLocaleString('es-CO');
+
+  // status mock
+  let st = 'empty';
+  if (total > 0) {
+    if (dem && total <= 5)  st = 'danger';
+    else if (dem && total <= 20) st = 'warn';
+    else if (!dem && total <= 2) st = 'danger';
+    else if (!dem && total <= 8) st = 'warn';
+    else st = 'ok';
+  }
+  pvBadge.className = `badge badge-${st}`;
+  pvBadge.textContent = {ok:'Disponible',warn:'Stock bajo',danger:'Crítico',empty:'Agotado'}[st];
+  pvTotal.style.color = st === 'ok' ? 'var(--ok)' : st === 'warn' ? 'var(--warn)' : st === 'danger' ? 'var(--danger)' : 'var(--text3)';
+
+  // dot color on preview strip
+  const strip = document.getElementById('preview-strip');
+  if (selectedCat) {
+    const c = catColor(selectedCat);
+    strip.style.borderLeftColor = c;
+    strip.style.borderLeftWidth = '3px';
+    strip.style.borderLeftStyle = 'solid';
+  } else {
+    strip.style.borderLeft = '';
+  }
+}
+
+async function addRowToExcel(item) {
+  if (!fileId || !accessToken) return false;
+  try {
+    // Find the next empty row after all data
+    const nextRow = excelRows.length + 1; // +1 because Excel is 1-indexed
+    const nextItem = inventory.length > 0
+      ? Math.max(...inventory.map(x => x.rowIndex)) + 2
+      : excelRows.length + 1;
+    const excelRowNum = nextItem;
+
+    const row = [
+      excelRows.length,         // A: ITEM (auto-number)
+      item.cat,                 // B: CATEGORÍA
+      item.prod,                // C: PRODUCTO
+      item.marca || '',         // D: MARCA
+      item.demanda,             // E: DEMANDA CONSTANTE
+      item.pres || '',          // F: PRESENTACIÓN
+      item.paq,                 // G: UNIDADES POR PAQUETE
+      item.sueltos,             // H: ELEMENTOS SUELTOS
+      item.total,               // I: TOTAL
+      item.venc || '',          // J: FECHA VENC
+      item.obs  || '',          // K: OBS
+    ];
+
+    await graphPatch(
+      `/me/drive/items/${fileId}/workbook/worksheets('${encodeURIComponent('Inventario ')}')` +
+      `/range(address='A${excelRowNum}:K${excelRowNum}')`,
+      { values: [row] }
+    );
+    return excelRowNum - 1; // rowIndex (0-based)
+  } catch(e) {
+    console.error('addRowToExcel error:', e);
+    throw e;
+  }
+}
+
+async function saveNewItem() {
+  // Validate
+  const prod = (document.getElementById('f-prod').value || '').trim().toUpperCase();
+  if (!prod) {
+    document.getElementById('f-prod').classList.add('error');
+    document.getElementById('f-prod').focus();
+    showToast('El nombre del producto es obligatorio', 'error-t'); return;
+  }
+  if (!selectedCat) {
+    showToast('Selecciona una categoría', 'error-t'); return;
+  }
+
+  const item = {
+    cat:     selectedCat,
+    prod,
+    marca:   (document.getElementById('f-marca').value||'').trim().toUpperCase() || null,
+    demanda: document.getElementById('f-demanda').checked ? 'SI' : 'NO',
+    pres:    (document.getElementById('f-pres').value||'').trim(),
+    paq:     parseInt(document.getElementById('f-paq').value)||0,
+    sueltos: parseInt(document.getElementById('f-sueltos').value)||0,
+    total:   parseInt(document.getElementById('f-total').value)||0,
+    venc:    document.getElementById('f-venc').value || null,
+    obs:     (document.getElementById('f-obs').value||'').trim() || null,
+  };
+
+  const btn = document.getElementById('btnSave');
+  btn.classList.add('saving'); btn.disabled = true;
+  setSyncStatus('syncing', 'Agregando fila…');
+
+  try {
+    let rowIndex;
+    if (fileId && accessToken) {
+      rowIndex = await addRowToExcel(item);
+      // reload to get accurate row indices
+      await loadExcel();
+    } else {
+      // offline: add locally
+      rowIndex = inventory.length > 0 ? Math.max(...inventory.map(x=>x.rowIndex)) + 1 : 1;
+      item.rowIndex = rowIndex;
+      item.id = rowIndex;
+      inventory.push(item);
+      renderAll();
+      setSyncStatus('error', 'Modo sin conexión');
+    }
+    closeModal();
+    showToast(`✓ "${item.prod}" agregado al inventario`, 'success');
+  } catch(e) {
+    setSyncStatus('error', 'Error al agregar');
+    showToast('No se pudo agregar: ' + e.message, 'error-t');
+  } finally {
+    btn.classList.remove('saving'); btn.disabled = false;
+  }
+}
+
+// keyboard ESC
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeModal();
 });
 
 // ─── INIT ─────────────────────────────────────────────────────────────────
