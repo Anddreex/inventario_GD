@@ -1258,14 +1258,31 @@ async function resolveSharePointExcel() {
   const site = await graphGet(`/sites/${SITE_HOSTNAME}:${SITE_PATH}`);
   siteId = site.id;
   const drives = await graphGet(`/sites/${encodeURIComponent(siteId)}/drives`);
+  const documentLibraries = (drives.value || []).filter(d => d.driveType === 'documentLibrary');
+  if (!documentLibraries.length) throw new Error('El sitio no tiene bibliotecas de documentos disponibles');
+
   const wanted = LIBRARY_NAME.toLowerCase();
-  const drive = (drives.value || []).find(d => (d.name || '').toLowerCase() === wanted)
-    || (drives.value || []).find(d => d.driveType === 'documentLibrary');
-  if (!drive) throw new Error(`No se encontró la biblioteca de SharePoint "${LIBRARY_NAME}"`);
-  driveId = drive.id;
+  const orderedDrives = [
+    ...documentLibraries.filter(d => (d.name || '').toLowerCase() === wanted),
+    ...documentLibraries.filter(d => (d.name || '').toLowerCase() !== wanted)
+  ];
   const encodedPath = FILE_PATH.split('/').map(encodeURIComponent).join('/');
-  const fileInfo = await graphGet(`/drives/${encodeURIComponent(driveId)}/root:/${encodedPath}`);
-  fileId = fileInfo.id;
+  let lastError = null;
+
+  // El nombre visible de la biblioteca puede variar entre Graph y SharePoint
+  // (por ejemplo, "Documentos", "Documentos compartidos" o "Shared Documents").
+  // Por eso probamos el archivo en cada biblioteca del sitio.
+  for (const drive of orderedDrives) {
+    try {
+      const fileInfo = await graphGet(`/drives/${encodeURIComponent(drive.id)}/root:/${encodedPath}`);
+      driveId = drive.id;
+      fileId = fileInfo.id;
+      return;
+    } catch (e) {
+      lastError = e;
+    }
+  }
+  throw new Error(`No se encontró el archivo "${FILE_PATH}" en las bibliotecas del sitio. ${lastError?.message || ''}`);
 }
 
 // ─── LOAD EXCEL ───────────────────────────────────────────────────────────
