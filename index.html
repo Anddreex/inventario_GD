@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Inventario Central</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://alcdn.msauth.net/browser/2.35.0/js/msal-browser.min.js"></script>
 <style>
 :root {
   --bg:        #0f1117;
@@ -342,6 +343,24 @@ header {
   font-size: 0.86rem; font-weight: 600; line-height: 1.35;
   color: var(--text); flex: 1;
 }
+.product-image {
+  width: 100%; height: 145px; object-fit: contain;
+  border-radius: var(--radius-sm); background: var(--surface2);
+  border: 1px solid var(--border); padding: 0.45rem;
+}
+.product-image-placeholder {
+  width: 100%; height: 145px; border-radius: var(--radius-sm);
+  background: var(--surface2); border: 1px dashed var(--border2);
+  color: var(--text3); display: flex; align-items: center;
+  justify-content: center; font-size: 2rem;
+}
+.image-preview {
+  display: none; width: 100%; max-height: 120px; object-fit: contain;
+  margin-top: 0.5rem; border-radius: var(--radius-sm);
+  background: var(--surface2); border: 1px solid var(--border);
+}
+.image-preview.visible { display: block; }
+
 .card-brand {
   font-size: 0.69rem; color: var(--text3); margin-top: 0.18rem;
   font-family: 'DM Mono', monospace; letter-spacing: 0.02em;
@@ -822,7 +841,7 @@ td.td-brand { font-size: 0.72rem; color: var(--text3); font-family: 'DM Mono', m
   <div class="login-card">
     <div class="login-logo">📦</div>
     <h2>Inventario Central</h2>
-    <p>Inicia sesión con tu cuenta Microsoft para conectar con el Excel en OneDrive y mantener el inventario sincronizado.</p>
+    <p>Inicia sesión con tu cuenta corporativa de Agroweb para acceder al inventario compartido en SharePoint.</p>
     <button class="btn-ms" onclick="loginMicrosoft()">
       <svg width="18" height="18" viewBox="0 0 21 21" fill="none">
         <rect x="1" y="1" width="9" height="9" fill="#f25022"/>
@@ -832,7 +851,7 @@ td.td-brand { font-size: 0.72rem; color: var(--text3); font-family: 'DM Mono', m
       </svg>
       Iniciar sesión con Microsoft
     </button>
-    <p class="login-note">Se solicitará permiso para leer y editar tu OneDrive</p>
+    <p class="login-note">Se solicitará permiso para leer y editar el Excel compartido en SharePoint</p>
   </div>
 </div>
 
@@ -919,7 +938,7 @@ td.td-brand { font-size: 0.72rem; color: var(--text3); font-family: 'DM Mono', m
     <div class="modal-head">
       <div>
         <h2>Agregar elemento</h2>
-        <p>El producto se añadirá al Excel en OneDrive automáticamente</p>
+        <p>El producto se añadirá al Excel compartido en SharePoint automáticamente</p>
       </div>
       <button class="modal-close" onclick="closeModal()">✕</button>
     </div>
@@ -960,6 +979,17 @@ td.td-brand { font-size: 0.72rem; color: var(--text3); font-family: 'DM Mono', m
           <div class="field-label">Marca</div>
           <input class="field-input" id="f-marca" type="text" placeholder="Ej: NORMA"
             oninput="updatePreview()">
+        </div>
+      </div>
+
+      <!-- IMAGEN -->
+      <div class="form-section">
+        <div class="form-section-title">🖼 Imagen del producto</div>
+        <div class="form-group">
+          <div class="field-label">Imagen ilustrativa</div>
+          <input class="field-input" id="f-imagen" type="file" accept="image/*" onchange="previewImage(this)">
+          <span class="field-hint">Se guardará en la carpeta “Imagnes Inv” de SharePoint.</span>
+          <img id="image-preview" class="image-preview" alt="Vista previa de la imagen">
         </div>
       </div>
 
@@ -1052,65 +1082,198 @@ td.td-brand { font-size: 0.72rem; color: var(--text3); font-family: 'DM Mono', m
 <div class="toast" id="toast"></div>
 
 <script>
-// ─── CONFIG ──────────────────────────────────────────────────────────────
-const CLIENT_ID = '7fae1576-0277-4593-916f-4446783a6b99';
-const TENANT    = 'organizations';
-const SCOPES    = ['Files.ReadWrite', 'User.Read'];
-const FILE_PATH = 'inventario/Relacion inventario papeleria, cafeteria y aseo.xlsx';
+// ─── CONFIGURACIÓN CORPORATIVA ────────────────────────────────────────────
+// El Excel vive en una biblioteca compartida de SharePoint, no en el OneDrive
+// personal de cada usuario. Todos los usuarios autorizados trabajan sobre el
+// mismo archivo.
+const CLIENT_ID = 'ab85965d-223e-4ff7-b302-d9902593c784';
+const TENANT    = '475c298a-c9c9-4796-9911-0b3bbebfea6d';
+const SCOPES    = ['User.Read', 'Sites.ReadWrite.All', 'Files.ReadWrite.All'];
+const SITE_HOSTNAME = 'agrowebsas.sharepoint.com';
+const SITE_PATH = '/sites/GESTIONDOCUMENTALGRUPOASM';
+const LIBRARY_NAME = 'Documentos compartidos';
+const FILE_PATH = 'Relacion inventario papeleria, cafeteria y aseo.xlsx';
+const WORKSHEET_NAME = 'Inventario ';
+const IMAGE_FOLDER_PATH = 'Imagnes Inv';
+const COL_IMAGE = 11; // Columna L en Excel
 const COL_TOTAL   = 8;
 const COL_SUELTOS = 7;
 const HEADER_ROW  = 1;
 
 // ─── STATE ───────────────────────────────────────────────────────────────
-let accessToken = null, fileId = null, excelRows = [], inventory = [];
+let accessToken = null, fileId = null, driveId = null, siteId = null, excelRows = [], inventory = [];
+let currentUser = null;
+let msalReady = false;
+const msalInstance = new msal.PublicClientApplication({
+  auth: {
+    clientId: CLIENT_ID,
+    authority: `https://login.microsoftonline.com/${TENANT}`,
+    redirectUri: window.location.origin + window.location.pathname,
+  },
+  cache: {
+    cacheLocation: 'sessionStorage',
+    storeAuthStateInCookie: false,
+  }
+});
 let activeCat = 'TODOS', activeStatus = 'TODOS', searchTerm = '';
 let currentView = 'grid';
 let sortKey = null, sortDir = 1; // null = default
 const TODAY = new Date();
 
 // ─── AUTH ─────────────────────────────────────────────────────────────────
-async function loginMicrosoft() {
-  const authUrl = `https://login.microsoftonline.com/${TENANT}/oauth2/v2.0/authorize?`
-    + `client_id=${CLIENT_ID}`
-    + `&response_type=token`
-    + `&redirect_uri=${encodeURIComponent('https://anddreex.github.io/inventario_GD/')}`
-    + `&scope=${encodeURIComponent(SCOPES.join(' '))}`
-    + `&response_mode=fragment`
-    + `&prompt=select_account`;
-  location.href = authUrl;
+async function ensureMsal() {
+  if (!msalReady) {
+    await msalInstance.initialize();
+    msalReady = true;
+  }
 }
 
-function parseTokenFromHash() {
-  const params = new URLSearchParams(location.hash.substring(1));
-  return params.get('access_token');
+async function loginMicrosoft() {
+  try {
+    await ensureMsal();
+    const loginResponse = await msalInstance.loginPopup({
+      scopes: SCOPES,
+      prompt: 'select_account'
+    });
+    currentUser = loginResponse.account;
+    await loadExcel();
+  } catch (e) {
+    console.error(e);
+    setSyncStatus('error', 'Error de inicio de sesión');
+    showToast('No se pudo iniciar sesión: ' + (e.message || e), 'error-t');
+  }
+}
+
+async function getAccessToken() {
+  await ensureMsal();
+  const account = currentUser || msalInstance.getAllAccounts()[0];
+  if (!account) throw new Error('No hay usuario corporativo autenticado');
+  currentUser = account;
+  try {
+    const response = await msalInstance.acquireTokenSilent({ scopes: SCOPES, account });
+    return response.accessToken;
+  } catch (e) {
+    const response = await msalInstance.acquireTokenPopup({ scopes: SCOPES, account });
+    return response.accessToken;
+  }
+}
+
+async function initializeAuthentication() {
+  try {
+    await ensureMsal();
+    const accounts = msalInstance.getAllAccounts();
+    if (accounts.length > 0) {
+      currentUser = accounts[0];
+      await loadExcel();
+    } else {
+      document.getElementById('loginScreen').style.display = 'flex';
+    }
+  } catch (e) {
+    console.error(e);
+    setSyncStatus('error', 'Error de autenticación');
+    showToast('No se pudo inicializar la autenticación: ' + (e.message || e), 'error-t');
+  }
 }
 
 // ─── GRAPH API ────────────────────────────────────────────────────────────
+async function graphRequest(url, options = {}) {
+  accessToken = await getAccessToken();
+  const headers = { ...(options.headers || {}), 'Authorization': 'Bearer ' + accessToken };
+  const res = await fetch('https://graph.microsoft.com/v1.0' + url, { ...options, headers });
+  if (!res.ok) throw new Error(`Graph error ${res.status}: ${await res.text()}`);
+  return res.status === 204 ? null : res.json();
+}
 async function graphGet(url) {
+  return graphRequest(url);
+}
+async function graphPatch(url, body) {
+  return graphRequest(url, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+}
+
+async function graphPutBlob(url, blob) {
+  accessToken = await getAccessToken();
+  const res = await fetch('https://graph.microsoft.com/v1.0' + url, {
+    method: 'PUT',
+    headers: { 'Authorization': 'Bearer ' + accessToken, 'Content-Type': blob.type || 'application/octet-stream' },
+    body: blob
+  });
+  if (!res.ok) throw new Error(`Graph error ${res.status}: ${await res.text()}`);
+  return res.json();
+}
+
+function safeFileName(name) {
+  const ext = (name.match(/\.[^.]+$/) || ['.jpg'])[0].toLowerCase();
+  const base = name.replace(/\.[^.]+$/, '').normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-zA-Z0-9_-]+/g, '-').replace(/^-+|-+$/g, '').toLowerCase() || 'producto';
+  return `${base}-${Date.now()}${ext}`;
+}
+
+async function uploadProductImage(file, productName) {
+  if (!file || !driveId) return null;
+  const fileName = safeFileName(file.name || productName || 'producto.jpg');
+  const encodedFolder = IMAGE_FOLDER_PATH.split('/').map(encodeURIComponent).join('/');
+  const uploaded = await graphPutBlob(
+    `/drives/${encodeURIComponent(driveId)}/root:/${encodedFolder}/${encodeURIComponent(fileName)}:/content`,
+    file
+  );
+  return uploaded;
+}
+
+async function saveImageReference(rowNumber, imageId) {
+  if (!imageId || !fileId || !driveId) return;
+  await graphPatch(
+    `/drives/${encodeURIComponent(driveId)}/items/${encodeURIComponent(fileId)}/workbook/worksheets('${encodeURIComponent(WORKSHEET_NAME)}')` +
+    `/range(address='L${rowNumber}:L${rowNumber}')`,
+    { values: [[imageId]] }
+  );
+}
+
+async function graphGetBlob(url) {
+  accessToken = await getAccessToken();
   const res = await fetch('https://graph.microsoft.com/v1.0' + url, {
     headers: { 'Authorization': 'Bearer ' + accessToken }
   });
   if (!res.ok) throw new Error(`Graph error ${res.status}: ${await res.text()}`);
-  return res.json();
+  return res.blob();
 }
-async function graphPatch(url, body) {
-  const res = await fetch('https://graph.microsoft.com/v1.0' + url, {
-    method: 'PATCH',
-    headers: { 'Authorization': 'Bearer ' + accessToken, 'Content-Type': 'application/json' },
-    body: JSON.stringify(body)
-  });
-  if (!res.ok) throw new Error(`Graph error ${res.status}: ${await res.text()}`);
-  return res.json();
+
+async function loadProductImages() {
+  await Promise.all(inventory.map(async item => {
+    if (!item.imageId || !driveId) return;
+    try {
+      const blob = await graphGetBlob(`/drives/${encodeURIComponent(driveId)}/items/${encodeURIComponent(item.imageId)}/content`);
+      item.imageUrl = URL.createObjectURL(blob);
+    } catch (e) {
+      console.warn('No se pudo cargar la imagen de', item.prod, e);
+      item.imageUrl = null;
+    }
+  }));
+}
+
+async function resolveSharePointExcel() {
+  const site = await graphGet(`/sites/${SITE_HOSTNAME}:${SITE_PATH}`);
+  siteId = site.id;
+  const drives = await graphGet(`/sites/${encodeURIComponent(siteId)}/drives`);
+  const wanted = LIBRARY_NAME.toLowerCase();
+  const drive = (drives.value || []).find(d => (d.name || '').toLowerCase() === wanted)
+    || (drives.value || []).find(d => d.driveType === 'documentLibrary');
+  if (!drive) throw new Error(`No se encontró la biblioteca de SharePoint "${LIBRARY_NAME}"`);
+  driveId = drive.id;
+  const encodedPath = FILE_PATH.split('/').map(encodeURIComponent).join('/');
+  const fileInfo = await graphGet(`/drives/${encodeURIComponent(driveId)}/root:/${encodedPath}`);
+  fileId = fileInfo.id;
 }
 
 // ─── LOAD EXCEL ───────────────────────────────────────────────────────────
 async function loadExcel() {
-  setSyncStatus('syncing', 'Conectando con OneDrive…');
+  setSyncStatus('syncing', 'Conectando con SharePoint…');
   try {
-    const encoded = encodeURIComponent(FILE_PATH);
-    const fileInfo = await graphGet(`/me/drive/root:/${encoded}`);
-    fileId = fileInfo.id;
-    const data = await graphGet(`/me/drive/items/${fileId}/workbook/worksheets/Inventario%20/usedRange`);
+    await resolveSharePointExcel();
+    const data = await graphGet(`/drives/${encodeURIComponent(driveId)}/items/${encodeURIComponent(fileId)}/workbook/worksheets('${encodeURIComponent(WORKSHEET_NAME)}')/usedRange`);
     excelRows = data.values;
     inventory = [];
     for (let i = HEADER_ROW; i < excelRows.length; i++) {
@@ -1126,9 +1289,11 @@ async function loadExcel() {
         paq: parseInt(row[6])||0, sueltos: parseInt(row[7])||0, total: parseInt(row[8])||0,
         venc: row[9] ? formatVenc(row[9]) : null,
         obs: row[10] ? row[10].toString().trim() : null,
+        imageId: row[11] ? row[11].toString().trim() : null,
       });
     }
-    setSyncStatus('connected', 'Conectado · OneDrive');
+    await loadProductImages();
+    setSyncStatus('connected', 'Conectado · SharePoint');
     renderAll(); hide('loginScreen'); showToast('✓ Excel cargado', 'success');
   } catch(e) {
     console.error(e);
@@ -1154,11 +1319,11 @@ async function saveRowToExcel(item) {
   try {
     const excelRow = item.rowIndex + 1;
     await graphPatch(
-      `/me/drive/items/${fileId}/workbook/worksheets('${encodeURIComponent('Inventario ')}')` +
+      `/drives/${encodeURIComponent(driveId)}/items/${encodeURIComponent(fileId)}/workbook/worksheets('${encodeURIComponent(WORKSHEET_NAME)}')` +
       `/range(address='H${excelRow}:I${excelRow}')`,
       { values: [[item.sueltos, item.total]] }
     );
-    setSyncStatus('connected', 'Conectado · OneDrive');
+    setSyncStatus('connected', 'Conectado · SharePoint');
     showToast('✓ Guardado en Excel', 'success');
   } catch(e) {
     setSyncStatus('error', 'Error al guardar');
@@ -1302,6 +1467,9 @@ function renderCard(d) {
       </div>
       <span class="badge badge-${st}" id="badge-${d.id}">${badgeMap[st]}</span>
     </div>
+    ${d.imageUrl
+      ? `<img class="product-image" src="${d.imageUrl}" alt="Imagen de ${d.prod}" loading="lazy">`
+      : `<div class="product-image-placeholder" title="Sin imagen">📦</div>`}
     <div class="stock-section">
       <div class="stock-row">
         <span class="stock-label">Total en stock</span>
@@ -1576,6 +1744,9 @@ function openModal() {
     if (el) { el.value = el.type === 'number' ? '0' : ''; el.classList.remove('error'); }
   });
   document.getElementById('f-venc').value = '';
+  document.getElementById('f-imagen').value = '';
+  document.getElementById('image-preview').classList.remove('visible');
+  document.getElementById('image-preview').removeAttribute('src');
   document.getElementById('f-demanda').checked = false;
   updatePreview();
   document.getElementById('modalOverlay').classList.add('open');
@@ -1595,6 +1766,17 @@ function selectCat(el) {
   el.classList.add('selected');
   selectedCat = el.dataset.cat;
   updatePreview();
+}
+
+function previewImage(input) {
+  const preview = document.getElementById('image-preview');
+  const file = input.files && input.files[0];
+  if (!file) { preview.classList.remove('visible'); preview.removeAttribute('src'); return; }
+  if (!file.type.startsWith('image/')) {
+    input.value = ''; showToast('Selecciona un archivo de imagen válido', 'error-t'); return;
+  }
+  preview.src = URL.createObjectURL(file);
+  preview.classList.add('visible');
 }
 
 function updatePreview() {
@@ -1661,11 +1843,12 @@ async function addRowToExcel(item) {
       item.total,               // I: TOTAL
       item.venc || '',          // J: FECHA VENC
       item.obs  || '',          // K: OBS
+      item.imageId || '',         // L: ID IMAGEN SHAREPOINT
     ];
 
     await graphPatch(
-      `/me/drive/items/${fileId}/workbook/worksheets('${encodeURIComponent('Inventario ')}')` +
-      `/range(address='A${excelRowNum}:K${excelRowNum}')`,
+      `/drives/${encodeURIComponent(driveId)}/items/${encodeURIComponent(fileId)}/workbook/worksheets('${encodeURIComponent(WORKSHEET_NAME)}')` +
+      `/range(address='A${excelRowNum}:L${excelRowNum}')`,
       { values: [row] }
     );
     return excelRowNum - 1; // rowIndex (0-based)
@@ -1698,6 +1881,9 @@ async function saveNewItem() {
     total:   parseInt(document.getElementById('f-total').value)||0,
     venc:    document.getElementById('f-venc').value || null,
     obs:     (document.getElementById('f-obs').value||'').trim() || null,
+    imageFile: document.getElementById('f-imagen').files[0] || null,
+    imageId: null,
+    imageUrl: null,
   };
 
   const btn = document.getElementById('btnSave');
@@ -1708,7 +1894,13 @@ async function saveNewItem() {
     let rowIndex;
     if (fileId && accessToken) {
       rowIndex = await addRowToExcel(item);
-      // reload to get accurate row indices
+      if (item.imageFile) {
+        setSyncStatus('syncing', 'Subiendo imagen…');
+        const uploadedImage = await uploadProductImage(item.imageFile, item.prod);
+        item.imageId = uploadedImage?.id || null;
+        await saveImageReference(rowIndex + 1, item.imageId);
+      }
+      // reload to get accurate row indices y la referencia de imagen
       await loadExcel();
     } else {
       // offline: add locally
@@ -1735,14 +1927,7 @@ document.addEventListener('keydown', e => {
 });
 
 // ─── INIT ─────────────────────────────────────────────────────────────────
-const token = parseTokenFromHash();
-if (token) {
-  accessToken = token;
-  history.replaceState(null, '', location.pathname);
-  loadExcel();
-} else {
-  document.getElementById('loginScreen').style.display = 'flex';
-}
+initializeAuthentication();
 </script>
 </body>
 </html>
