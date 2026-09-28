@@ -24,8 +24,8 @@
   --cat-papeleria: #5b7cf6;
   --cat-cafeteria: #f0a030;
   --cat-aseo:      #28c98a;
-  --cat-mobiliario:#a06cf5;
-  --cat-equipo:#3bb7c9
+  --cat-mobiliario: #a06cf5;
+  --cat-equipo:     #3bb7c9;
 
   --ok:      #28c98a;
   --ok-bg:   #0d2e20;
@@ -190,7 +190,7 @@ header {
 .chip[data-cat="CAFETERIA"].active { background: var(--cat-cafeteria); color: #1a0f00; }
 .chip[data-cat="ASEO"].active      { background: var(--cat-aseo); color: #001a0f; }
 .chip[data-cat="MOBILIARIO"].active{ background: var(--cat-mobiliario); }
-.chip[data-cat="EQUIPO_OFICINA_ELECTRONICO"].active{ background: var(--cat-equipo); color: #06171a; }
+.chip[data-cat="EQUIPO_OFICINA_ELECTRONICO"].active { background: var(--cat-equipo); color: #06171a; }
 .chip[data-status="TODOS"].active  { background: var(--accent); }
 .chip[data-status="danger"].active { background: var(--danger); }
 .chip[data-status="warn"].active   { background: var(--warn); color: #1a0f00; }
@@ -899,7 +899,7 @@ td.td-brand { font-size: 0.72rem; color: var(--text3); font-family: 'DM Mono', m
     <button class="chip" data-cat="CAFETERIA"><span class="chip-dot" style="background:var(--cat-cafeteria)"></span>Cafetería</button>
     <button class="chip" data-cat="ASEO"><span class="chip-dot" style="background:var(--cat-aseo)"></span>Aseo</button>
     <button class="chip" data-cat="MOBILIARIO"><span class="chip-dot" style="background:var(--cat-mobiliario)"></span>Mobiliario</button>
-    <button class="chip" data-cat="EQUIPO_OFICINA_ELECTRONICO"><span class="chip-dot" style="background:var(--cat-equipo)"></span>Equipo de oficina y electronico</button>
+    <button class="chip" data-cat="EQUIPO_OFICINA_ELECTRONICO"><span class="chip-dot" style="background:var(--cat-equipo)"></span>Equipo de oficina y electrónico</button>
   </div>
   <div class="sep"></div>
   <div class="filter-row" id="statusFilters">
@@ -1391,7 +1391,7 @@ function pct(d) {
 }
 
 function catCls(cat) {
-  return {PAPELERIA:'cat-papeleria',CAFETERIA:'cat-cafeteria',ASEO:'cat-aseo',MOBILIARIO:'cat-mobiliario' ,EQUIPO_OFICIONA_ELECTRONICO:'cat-equipo'}[cat]||'';
+  return {PAPELERIA:'cat-papeleria',CAFETERIA:'cat-cafeteria',ASEO:'cat-aseo',MOBILIARIO:'cat-mobiliario' ,EQUIPO_OFICINA_ELECTRONICO: 'cat-equipo'}[cat]||'';
 }
 function catColor(cat) {
   return {PAPELERIA:'var(--cat-papeleria)',CAFETERIA:'var(--cat-cafeteria)',ASEO:'var(--cat-aseo)',MOBILIARIO:'var(--cat-mobiliario)' ,EQUIPO_OFICINA_ELECTRONICO: 'var(--cat-equipo)'}[cat]||'var(--text3)';
@@ -2001,3 +2001,4 @@ initializeAuthentication();
 </script>
 </body>
 </html>
+
