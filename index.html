@@ -25,6 +25,7 @@
   --cat-cafeteria: #f0a030;
   --cat-aseo:      #28c98a;
   --cat-mobiliario:#a06cf5;
+  --cat-mobiliario:#3bb7c9
 
   --ok:      #28c98a;
   --ok-bg:   #0d2e20;
@@ -189,6 +190,7 @@ header {
 .chip[data-cat="CAFETERIA"].active { background: var(--cat-cafeteria); color: #1a0f00; }
 .chip[data-cat="ASEO"].active      { background: var(--cat-aseo); color: #001a0f; }
 .chip[data-cat="MOBILIARIO"].active{ background: var(--cat-mobiliario); }
+.chip[data-cat="EQUIPO_OFICINA_ELECTRONICO"]. active{ background: var (--cat-equipo); color: #06171a; }
 .chip[data-status="TODOS"].active  { background: var(--accent); }
 .chip[data-status="danger"].active { background: var(--danger); }
 .chip[data-status="warn"].active   { background: var(--warn); color: #1a0f00; }
@@ -331,6 +333,7 @@ header {
 .cat-cafeteria  .card-accent-bar { background: var(--cat-cafeteria); }
 .cat-aseo       .card-accent-bar { background: var(--cat-aseo); }
 .cat-mobiliario .card-accent-bar { background: var(--cat-mobiliario); }
+.cat-equipo .card-accent-bar {background: var(--cat-equipo); }
 
 .card.status-danger { border-color: var(--danger-bd); background: #160d0d; }
 .card.status-warn   { border-color: var(--warn-bd);   background: #17110500; }
@@ -896,6 +899,7 @@ td.td-brand { font-size: 0.72rem; color: var(--text3); font-family: 'DM Mono', m
     <button class="chip" data-cat="CAFETERIA"><span class="chip-dot" style="background:var(--cat-cafeteria)"></span>Cafetería</button>
     <button class="chip" data-cat="ASEO"><span class="chip-dot" style="background:var(--cat-aseo)"></span>Aseo</button>
     <button class="chip" data-cat="MOBILIARIO"><span class="chip-dot" style="background:var(--cat-mobiliario)"></span>Mobiliario</button>
+    <button class="chip" data-cat="EQUIPO_OFICINA_ELECTRONICO"><span class="chip-dot" style="background:var(--cat-equipo)"></span>Equipo de oficina y electronico</button>
   </div>
   <div class="sep"></div>
   <div class="filter-row" id="statusFilters">
@@ -972,6 +976,10 @@ td.td-brand { font-size: 0.72rem; color: var(--text3); font-family: 'DM Mono', m
           <div class="cat-opt" data-cat="MOBILIARIO" style="--c:var(--cat-mobiliario)" onclick="selectCat(this)">
             <div class="co-dot" style="background:var(--cat-mobiliario)"></div>
             <span class="co-name">Mobiliario</span>
+          </div>
+          <div class="cat-opt" data-cat="EQUIPO_OFICINA_ELECTRONICO" style="--c:var(--cat-equipo)" onclick="selectCat(this)">
+          <div class="co-dot" style="background:var(--cat-equipo)"></div>
+          <span class="co-name">Equipo de oficina y electrónico</span>
           </div>
         </div>
       </div>
@@ -1383,13 +1391,13 @@ function pct(d) {
 }
 
 function catCls(cat) {
-  return {PAPELERIA:'cat-papeleria',CAFETERIA:'cat-cafeteria',ASEO:'cat-aseo',MOBILIARIO:'cat-mobiliario'}[cat]||'';
+  return {PAPELERIA:'cat-papeleria',CAFETERIA:'cat-cafeteria',ASEO:'cat-aseo',MOBILIARIO:'cat-mobiliario' ,EQUIPO_OFICIONA_ELECTRONICO:'cat-equipo'}[cat]||'';
 }
 function catColor(cat) {
-  return {PAPELERIA:'var(--cat-papeleria)',CAFETERIA:'var(--cat-cafeteria)',ASEO:'var(--cat-aseo)',MOBILIARIO:'var(--cat-mobiliario)'}[cat]||'var(--text3)';
+  return {PAPELERIA:'var(--cat-papeleria)',CAFETERIA:'var(--cat-cafeteria)',ASEO:'var(--cat-aseo)',MOBILIARIO:'var(--cat-mobiliario)' ,EQUIPO_OFICINA_ELECTRONICO: 'var(--cat-equipo)'}[cat]||'var(--text3)';
 }
 function catLabel(cat) {
-  return {PAPELERIA:'Papelería',CAFETERIA:'Cafetería',ASEO:'Aseo',MOBILIARIO:'Mobiliario'}[cat]||cat;
+  return {PAPELERIA:'Papelería',CAFETERIA:'Cafetería',ASEO:'Aseo',MOBILIARIO:'Mobiliario' ,EQUIPO_OFICINA_ELECTRONICO: 'Equipo de oficina y electrónico'}[cat]||cat;
 }
 
 const badgeMap = {ok:'Disponible',warn:'Stock bajo',danger:'Crítico',empty:'Agotado'};
@@ -1604,7 +1612,7 @@ function renderGrid() {
 
   // Card view grouped by category
   const cats = activeCat === 'TODOS'
-    ? ['PAPELERIA','CAFETERIA','ASEO','MOBILIARIO']
+    ? ['PAPELERIA','CAFETERIA','ASEO','MOBILIARIO','EQUIPO_OFICINA_ELECTRONICO']
     : [activeCat];
   let html = '';
   cats.forEach(cat => {
