@@ -1508,7 +1508,7 @@ async function saveRowToExcel(item) {
 }
 
 // ─── AUDITORÍA DE MOVIMIENTOS ─────────────────────────────────────────────
-const MOVEMENT_HEADERS = ['Fecha y hora', 'Usuario', 'Correo', 'Acción', 'Producto', 'Cantidad', 'Stock anterior', 'Stock nuevo'];
+const MOVEMENT_HEADERS = ['Fecha y hora', 'Usuario', 'Correo', 'Acción', 'Producto', 'Cantidad', 'Stock anterior', 'Stock nuevo', 'Notificado'];
 
 async function ensureMovementsWorksheet() {
   try {
@@ -1554,7 +1554,8 @@ async function logInventoryMovement({ item, action, quantity, previousStock, new
       item.prod,
       quantity,
       previousStock,
-      newStock
+      newStock,
+      ''
     ]] })
   });
 }
